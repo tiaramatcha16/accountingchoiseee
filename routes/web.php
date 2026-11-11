@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\SellerApplicationController as AdminSellerApplicationController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Marketplace\BuyerDashboardController;
 use App\Http\Controllers\Marketplace\BuyerOrderController;
 use App\Http\Controllers\Marketplace\CatalogController;
 use App\Http\Controllers\Marketplace\OrderController as MarketplaceOrderController;
@@ -19,7 +20,20 @@ Route::get('/', fn () => Inertia::render('landing-page/index'))->name('home');
 Route::get('/templates', [CatalogController::class, 'index'])->name('catalog.index');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
+    Route::get('dashboard', function () {
+        $user = request()->user();
+
+        if ($user->isAdmin()) {
+            return to_route('admin.dashboard');
+        }
+
+        if ($user->isSeller()) {
+            return to_route('seller.products.index');
+        }
+
+        return app(BuyerDashboardController::class)(request());
+    })->name('dashboard');
+
     Route::post('/templates/{product}/orders', [MarketplaceOrderController::class, 'store'])->name('orders.store');
     Route::get('/my-orders', [BuyerOrderController::class, 'index'])->name('orders.index');
     Route::get('/my-orders/{order}/items/{item}/download', [BuyerOrderController::class, 'download'])->name('orders.download');
