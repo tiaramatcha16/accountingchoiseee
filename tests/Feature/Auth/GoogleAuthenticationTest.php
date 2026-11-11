@@ -48,6 +48,7 @@ test('verified google users can register and authenticate', function () {
         'name' => 'Google User',
         'email' => 'google@example.com',
         'google_id' => 'google-user-123',
+        'role' => 'buyer',
     ]);
     expect(User::query()->where('email', 'google@example.com')->first()->email_verified_at)->not->toBeNull();
 });
