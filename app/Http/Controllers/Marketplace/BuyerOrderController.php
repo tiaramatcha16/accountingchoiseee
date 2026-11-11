@@ -15,12 +15,10 @@ class BuyerOrderController extends Controller
 {
     public function index(Request $request): Response
     {
-        $orders = Order::query()->where('buyer_id', $request->user()->id)
-            ->with('items:id,order_id,product_id,product_title,unit_price')
-            ->latest()->paginate(15);
-
         return Inertia::render('marketplace/orders', [
-            'orders' => $orders,
+            'orders' => Order::query()->where('buyer_id', $request->user()->id)
+                ->with('items:id,order_id,product_id,product_title,unit_price')
+                ->latest()->paginate(15),
             'status' => $request->session()->get('status'),
         ]);
     }

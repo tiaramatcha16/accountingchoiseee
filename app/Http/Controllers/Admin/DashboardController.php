@@ -14,6 +14,12 @@ class DashboardController extends Controller
     public function __invoke(): Response
     {
         $paidOrders = Order::query()->where('status', Order::STATUS_PAID);
+        $monthlyRows = Order::query()->where('status', Order::STATUS_PAID)
+            ->where('paid_at', '>=', now()->subMonths(5)->startOfMonth())
+            ->get(['paid_at', 'total_amount'])
+            ->groupBy(fn (Order $order) => $order->paid_at?->format('Y-m'))
+            ->map(fn ($orders, $month) => ['month' => $month, 'total' => $orders->sum('total_amount')])
+            ->values();
 
         return Inertia::render('admin/dashboard', [
             'stats' => [
@@ -28,10 +34,7 @@ class DashboardController extends Controller
             ],
             'recentOrders' => Order::with('buyer:id,name,email')->latest()->limit(8)->get(),
             'topProducts' => Product::withCount('orderItems')->orderByDesc('order_items_count')->limit(5)->get(['id', 'title', 'price', 'status']),
-            'salesByMonth' => Order::query()->where('status', Order::STATUS_PAID)
-                ->where('paid_at', '>=', now()->subMonths(5)->startOfMonth())
-                ->selectRaw('YEAR(paid_at) as year, MONTH(paid_at) as month_number, SUM(total_amount) as total')
-                ->groupBy('year', 'month_number')->orderBy('year')->orderBy('month_number')->get(),
+            'salesByMonth' => $monthlyRows,
         ]);
     }
 }

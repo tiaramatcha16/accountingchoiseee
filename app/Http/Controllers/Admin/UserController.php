@@ -26,6 +26,7 @@ class UserController extends Controller
         return Inertia::render('admin/users', [
             'users' => $users,
             'filters' => $request->only('q', 'role'),
+            'status' => $request->session()->get('status'),
         ]);
     }
 

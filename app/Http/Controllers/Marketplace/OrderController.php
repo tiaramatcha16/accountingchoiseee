@@ -32,6 +32,6 @@ class OrderController extends Controller
             return $order;
         });
 
-        return to_route('orders.index')->with('status', 'Pesanan dibuat. Statusnya menunggu pembayaran terverifikasi.');
+        return to_route('orders.index')->with('status', 'Pesanan '.$order->order_number.' dibuat dan menunggu pembayaran terverifikasi admin.');
     }
 }
