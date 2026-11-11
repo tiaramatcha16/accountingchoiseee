@@ -11,145 +11,70 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthEntryLayout from '@/layouts/auth/auth-entry-layout';
 
-type LoginForm = {
-    email: string;
-    password: string;
-    remember: boolean;
-};
-
+type LoginForm = { email: string; password: string; remember: boolean };
 interface LoginProps {
     status?: string;
     googleError?: string;
+    roleError?: string;
     canResetPassword: boolean;
+    adminMode?: boolean;
 }
 
-export default function Login({ status, googleError, canResetPassword }: LoginProps) {
+export default function Login({ status, googleError, roleError, canResetPassword, adminMode = false }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
-    const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
-        email: '',
-        password: '',
-        remember: false,
-    });
+    const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({ email: '', password: '', remember: false });
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
+    const submit: FormEventHandler = (event) => {
+        event.preventDefault();
+        post(adminMode ? route('admin.login.store') : route('login'), { onFinish: () => reset('password') });
     };
 
     return (
-        <AuthEntryLayout title="Masuk ke AccountingChoice" description="Silakan masukkan informasi akun kamu.">
-            <Head title="Masuk" />
-
+        <AuthEntryLayout
+            title={adminMode ? 'Login Admin Toko' : 'Masuk sebagai Pembeli'}
+            description={adminMode ? 'Halaman khusus pengelola toko template Excel.' : 'Masuk untuk melihat pesanan dan membeli template Excel.'}
+        >
+            <Head title={adminMode ? 'Login Admin' : 'Login Pembeli'} />
+            {adminMode && <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Akses khusus admin. Akun admin dibuat manual, bukan melalui pendaftaran pembeli.</div>}
+            {roleError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{roleError}</div>}
             <form className="flex flex-col gap-5" onSubmit={submit}>
                 <div className="grid gap-5">
                     <div className="grid gap-2">
-                        <Label htmlFor="email" className="text-brand-ink text-sm font-medium">
-                            Email
-                        </Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            required
-                            autoFocus
-                            tabIndex={1}
-                            autoComplete="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@example.com"
-                            disabled={processing}
-                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
-                        />
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" required autoFocus autoComplete="email" value={data.email} onChange={(event) => setData('email', event.target.value)} placeholder="email@example.com" disabled={processing} />
                         <InputError message={errors.email} />
                     </div>
-
                     <div className="grid gap-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="password" className="text-brand-ink text-sm font-medium">
-                                Password
-                            </Label>
-                            {canResetPassword && (
-                                <TextLink
-                                    href={route('password.request')}
-                                    className="text-brand-primary decoration-brand-primary/40 text-xs"
-                                    tabIndex={4}
-                                >
-                                    Lupa password?
-                                </TextLink>
-                            )}
+                            <Label htmlFor="password">Password</Label>
+                            {!adminMode && canResetPassword && <TextLink href={route('password.request')} className="text-brand-primary text-xs">Lupa password?</TextLink>}
                         </div>
                         <div className="relative">
-                            <Input
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                tabIndex={2}
-                                autoComplete="current-password"
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                placeholder="Password"
-                                disabled={processing}
-                                className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 pr-10 placeholder:text-black/40"
-                            />
-                            <button
-                                type="button"
-                                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                                aria-controls="password"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="hover:text-brand-primary focus-visible:outline-brand-primary absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45 transition focus-visible:outline-2"
-                            >
+                            <Input id="password" type={showPassword ? 'text' : 'password'} required autoComplete="current-password" value={data.password} onChange={(event) => setData('password', event.target.value)} placeholder="Password" disabled={processing} className="pr-10" />
+                            <button type="button" aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'} onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45">
                                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
                         </div>
                         <InputError message={errors.password} />
                     </div>
-
                     <div className="flex items-center gap-2">
-                        <Checkbox
-                            id="remember"
-                            name="remember"
-                            checked={data.remember}
-                            onCheckedChange={(checked) => setData('remember', checked === true)}
-                            tabIndex={3}
-                            className="border-auth-border data-[state=checked]:border-brand-primary data-[state=checked]:bg-brand-primary"
-                        />
-                        <Label htmlFor="remember" className="text-xs font-normal text-black/65">
-                            Ingat saya
-                        </Label>
+                        <Checkbox id="remember" checked={data.remember} onCheckedChange={(checked) => setData('remember', checked === true)} />
+                        <Label htmlFor="remember" className="text-xs font-normal">Ingat saya</Label>
                     </div>
-
-                    <Button
-                        type="submit"
-                        className="bg-auth-action hover:bg-brand-primary h-10 w-full rounded-lg font-semibold text-white"
-                        tabIndex={5}
-                        disabled={processing}
-                    >
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        {processing ? 'Memproses...' : 'Masuk'}
+                    <Button type="submit" disabled={processing} className="bg-auth-action h-10 w-full rounded-lg font-semibold text-white">
+                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}{processing ? 'Memproses...' : adminMode ? 'Masuk Admin' : 'Masuk sebagai Pembeli'}
                     </Button>
                 </div>
 
-                <GoogleSignInButton />
-
-                <div className="text-center text-sm text-black/55">
-                    Belum punya akun?{' '}
-                    <TextLink href={route('register')} className="text-brand-primary font-semibold" tabIndex={6}>
-                        Daftar
-                    </TextLink>
-                </div>
+                {!adminMode && <>
+                    <GoogleSignInButton />
+                    <div className="text-center text-sm text-black/55">Belum punya akun? <TextLink href={route('register')} className="text-brand-primary font-semibold">Daftar pembeli</TextLink></div>
+                    <div className="text-center text-xs text-black/45">Pemilik toko? <TextLink href={route('admin.login')} className="text-brand-primary font-semibold">Login admin</TextLink></div>
+                </>}
+                {adminMode && <div className="text-center text-sm text-black/55">Pembeli? <TextLink href={route('login')} className="text-brand-primary font-semibold">Login pembeli</TextLink></div>}
             </form>
-
-            {status && (
-                <div role="status" className="text-brand-primary mt-4 text-center text-sm font-medium">
-                    {status}
-                </div>
-            )}
-            {googleError && (
-                <div role="alert" className="mt-4 text-center text-sm font-medium text-red-700">
-                    {googleError}
-                </div>
-            )}
+            {status && <div role="status" className="mt-4 text-center text-sm font-medium text-emerald-700">{status}</div>}
+            {!adminMode && googleError && <div role="alert" className="mt-4 text-center text-sm font-medium text-red-700">{googleError}</div>}
         </AuthEntryLayout>
     );
 }

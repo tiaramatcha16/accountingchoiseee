@@ -13,37 +13,53 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Show the login page.
-     */
     public function create(Request $request): Response
     {
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
             'googleError' => $request->session()->get('google_error'),
+            'roleError' => $request->session()->get('role_error'),
+            'adminMode' => $request->routeIs('admin.login'),
         ]);
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
-    public function store(LoginRequest $request): RedirectResponse
+    public function storeBuyer(LoginRequest $request): RedirectResponse
+    {
+        return $this->authenticateForRole($request, 'buyer');
+    }
+
+    public function storeAdmin(LoginRequest $request): RedirectResponse
+    {
+        return $this->authenticateForRole($request, 'admin');
+    }
+
+    private function authenticateForRole(LoginRequest $request, string $expectedRole): RedirectResponse
     {
         $request->authenticate();
+        $user = $request->user();
+
+        if (($user->role ?? 'buyer') !== $expectedRole) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            $loginRoute = $expectedRole === 'admin' ? 'admin.login' : 'login';
+            $message = $expectedRole === 'admin'
+                ? 'Akun ini bukan akun admin. Gunakan halaman login pembeli.'
+                : 'Akun admin harus masuk melalui halaman login admin.';
+
+            return to_route($loginRoute)->with('role_error', $message);
+        }
 
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

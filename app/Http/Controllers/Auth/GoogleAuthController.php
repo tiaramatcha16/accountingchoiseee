@@ -37,46 +37,32 @@ class GoogleAuthController extends Controller
             $googleUser = Socialite::driver('google')->user();
         } catch (InvalidStateException|GuzzleException $exception) {
             Log::warning('Google OAuth callback failed.', ['exception' => $exception::class]);
-
             return to_route('login')->with('google_error', 'Login Google gagal atau kedaluwarsa. Silakan coba lagi.');
         }
 
         $email = Str::lower(trim((string) $googleUser->getEmail()));
         $googleId = $googleUser->getId();
         $rawGoogleUser = $googleUser->getRaw();
-        $isVerified = filter_var(
-            $rawGoogleUser['email_verified'] ?? $rawGoogleUser['verified_email'] ?? false,
-            FILTER_VALIDATE_BOOLEAN
-        );
+        $isVerified = filter_var($rawGoogleUser['email_verified'] ?? $rawGoogleUser['verified_email'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL) || ! $googleId || ! $isVerified) {
-            return to_route('login')->with('google_error', 'Google tidak memberikan email terverifikasi. Gunakan akun Google lain atau daftar dengan email.');
+            return to_route('login')->with('google_error', 'Google tidak memberikan email terverifikasi.');
         }
 
-        $user = User::query()->where('google_id', $googleId)->first();
+        $user = User::query()->where('google_id', $googleId)->first() ?? User::query()->where('email', $email)->first();
 
-        if ($user && $user->email !== $email && User::query()->where('email', $email)->whereKeyNot($user->getKey())->exists()) {
-            return to_route('login')->with('google_error', 'Email Google ini sudah terhubung ke akun lain. Hubungi tim dukungan.');
+        // Google sign-in is a buyer-only entry point. Admins must use /admin/login.
+        if ($user?->isAdmin()) {
+            return to_route('login')->with('google_error', 'Akun admin tidak dapat masuk melalui Google pembeli. Gunakan halaman login admin.');
         }
 
-        if (! $user) {
-            $user = User::query()->where('email', $email)->first();
+        if ($user && $user->google_id && $user->google_id !== $googleId) {
+            return to_route('login')->with('google_error', 'Akun ini sudah terhubung ke akun Google lain.');
         }
 
         if ($user) {
-            if ($user->google_id && $user->google_id !== $googleId) {
-                return to_route('login')->with('google_error', 'Akun ini sudah terhubung ke akun Google lain. Hubungi tim dukungan.');
-            }
-
-            // Link the verified Google identity without changing an existing
-            // user's role or profile fields.
-            $user->forceFill([
-                'email_verified_at' => $user->email_verified_at ?? now(),
-                'google_id' => $googleId,
-            ])->save();
+            $user->forceFill(['email_verified_at' => $user->email_verified_at ?? now(), 'google_id' => $googleId])->save();
         } else {
-            // Social login creates and persists a buyer account. The password
-            // cast hashes this random, unusable password before it is stored.
             $user = User::query()->forceCreate([
                 'name' => $googleUser->getName() ?: Str::before($email, '@'),
                 'email' => $email,

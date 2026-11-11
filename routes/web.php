@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Marketplace\BuyerDashboardController;
 use App\Http\Controllers\Marketplace\BuyerOrderController;
 use App\Http\Controllers\Marketplace\CatalogController;
@@ -16,8 +17,12 @@ use Inertia\Inertia;
 Route::get('/', fn () => Inertia::render('landing-page/index'))->name('home');
 Route::get('/templates', [CatalogController::class, 'index'])->name('catalog.index');
 
-// Buyers and admins share authentication, but are sent to their own dashboard.
-Route::middleware('auth')->group(function () {
+Route::middleware('guest')->group(function () {
+    Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
+    Route::post('/admin/login', [AuthenticatedSessionController::class, 'storeAdmin'])->name('admin.login.store');
+});
+
+Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function (Request $request) {
         if ($request->user()->isAdmin()) {
             return to_route('admin.dashboard');
