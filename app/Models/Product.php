@@ -16,12 +16,16 @@ class Product extends Model
 
     protected $fillable = [
         'created_by', 'title', 'slug', 'category', 'description', 'price',
-        'file_path', 'original_filename', 'status', 'download_count',
+        'file_path', 'original_filename', 'status', 'download_count', 'published_at',
     ];
 
     protected function casts(): array
     {
-        return ['price' => 'integer', 'download_count' => 'integer'];
+        return [
+            'price' => 'integer',
+            'download_count' => 'integer',
+            'published_at' => 'datetime',
+        ];
     }
 
     public function creator(): BelongsTo

@@ -13,11 +13,23 @@ use Inertia\Response;
 
 class OrderController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $orders = Order::query()
+            ->with('buyer:id,name,email', 'items:id,order_id,product_title,unit_price')
+            ->when($request->string('status')->toString(), fn ($query, $status) => $query->where('status', $status))
+            ->when($request->string('q')->toString(), function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('order_number', 'like', '%'.$search.'%')
+                        ->orWhereHas('buyer', fn ($buyer) => $buyer->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
+                });
+            })
+            ->latest()->paginate(20)->withQueryString();
+
         return Inertia::render('admin/orders', [
-            'orders' => Order::query()->with('buyer:id,name,email', 'items:id,order_id,product_title,unit_price')
-                ->latest()->paginate(20),
+            'orders' => $orders,
+            'filters' => $request->only('status', 'q'),
+            'status' => $request->session()->get('status'),
         ]);
     }
 
@@ -40,6 +52,6 @@ class OrderController extends Controller
             ]);
         });
 
-        return back()->with('status', 'Status pesanan diperbarui. Pastikan pembayaran sudah diverifikasi sebelum menandai lunas.');
+        return back()->with('status', 'Status pesanan diperbarui. Verifikasi pembayaran aktual sebelum menandai lunas.');
     }
 }

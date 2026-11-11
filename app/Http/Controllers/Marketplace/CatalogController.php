@@ -21,8 +21,8 @@ class CatalogController extends Controller
                 });
             })
             ->when(request('category'), fn ($query, $category) => $query->where('category', $category))
-            ->latest('published_at')
-            ->latest('id')
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
             ->paginate(12)
             ->withQueryString();
 

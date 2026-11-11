@@ -18,6 +18,7 @@ class ProductController extends Controller
     {
         return Inertia::render('admin/products', [
             'products' => Product::query()->with('creator:id,name')->latest()->paginate(15),
+            'status' => request()->session()->get('status'),
         ]);
     }
 
@@ -33,11 +34,12 @@ class ProductController extends Controller
 
         $file = $validated['file'];
         $filePath = $file->store('excel-templates', 'local');
-        $slug = Str::slug($validated['title']);
-        $baseSlug = $slug ?: 'template';
-        $suffix = 1;
-        while (Product::where('slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$suffix++;
+        abort_unless($filePath, 500, 'File template gagal disimpan.');
+
+        $baseSlug = Str::slug($validated['title']) ?: 'template';
+        $slug = $baseSlug;
+        for ($suffix = 1; Product::where('slug', $slug)->exists(); $suffix++) {
+            $slug = $baseSlug.'-'.$suffix;
         }
 
         Product::create([
@@ -52,7 +54,7 @@ class ProductController extends Controller
             'status' => Product::STATUS_DRAFT,
         ]);
 
-        return to_route('admin.products.index')->with('status', 'Template tersimpan sebagai draft. Terbitkan setelah memeriksa file dan deskripsinya.');
+        return to_route('admin.products.index')->with('status', 'Template tersimpan sebagai draft. Periksa file dan deskripsi sebelum menerbitkannya.');
     }
 
     public function updateStatus(Request $request, Product $product): RedirectResponse
@@ -61,8 +63,26 @@ class ProductController extends Controller
             'status' => ['required', Rule::in([Product::STATUS_DRAFT, Product::STATUS_PUBLISHED, Product::STATUS_ARCHIVED])],
         ]);
 
-        $product->update(['status' => $validated['status']]);
+        $status = $validated['status'];
+        $product->update([
+            'status' => $status,
+            'published_at' => $status === Product::STATUS_PUBLISHED
+                ? ($product->published_at ?? now())
+                : null,
+        ]);
 
         return back()->with('status', 'Status template diperbarui.');
+    }
+
+    public function destroy(Product $product): RedirectResponse
+    {
+        if ($product->orderItems()->exists()) {
+            return back()->withErrors(['product' => 'Template tidak dapat dihapus karena sudah tercatat dalam pesanan. Arsipkan produk sebagai gantinya.']);
+        }
+
+        Storage::disk('local')->delete($product->file_path);
+        $product->delete();
+
+        return back()->with('status', 'Template dan file privatnya berhasil dihapus.');
     }
 }
