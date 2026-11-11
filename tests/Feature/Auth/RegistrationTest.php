@@ -1,31 +1,35 @@
 <?php
 
- test('registration screen can be rendered', function () {
-    $response = $this->get('/register');
+use Illuminate\Support\Facades\Hash;
 
-    $response->assertStatus(200);
+test('registration screen can be rendered', function () {
+    $this->get('/register')->assertStatus(200);
 });
 
-test('new users can register', function () {
+test('new users are persisted as buyers and signed in', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',
-        'email' => 'test@example.com',
+        'email' => 'TEST@example.com',
         'phone' => '081234567890',
         'institution' => 'AccountingChoice',
         'city' => 'Jakarta',
         'password' => 'password',
         'password_confirmation' => 'password',
-        // Public registration must not allow users to grant themselves privileges.
+        // Malicious or stale clients cannot grant admin permissions.
         'role' => 'admin',
     ]);
 
     $this->assertAuthenticated();
     $this->assertDatabaseHas('users', [
+        'name' => 'Test User',
         'email' => 'test@example.com',
         'phone' => '081234567890',
         'institution' => 'AccountingChoice',
         'city' => 'Jakarta',
         'role' => 'buyer',
     ]);
+
+    $user = \App\Models\User::query()->where('email', 'test@example.com')->firstOrFail();
+    expect(Hash::check('password', $user->password))->toBeTrue();
     $response->assertRedirect(route('dashboard', absolute: false));
 });

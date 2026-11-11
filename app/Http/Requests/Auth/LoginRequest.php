@@ -11,17 +11,19 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge(['email' => Str::lower(trim((string) $this->input('email')))]);
+        }
+    }
+
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -75,9 +77,6 @@ class LoginRequest extends FormRequest
         ]);
     }
 
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());

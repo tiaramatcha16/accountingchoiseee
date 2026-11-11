@@ -7,7 +7,6 @@ use App\Models\User;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -42,7 +41,7 @@ class GoogleAuthController extends Controller
             return to_route('login')->with('google_error', 'Login Google gagal atau kedaluwarsa. Silakan coba lagi.');
         }
 
-        $email = $googleUser->getEmail();
+        $email = Str::lower(trim((string) $googleUser->getEmail()));
         $googleId = $googleUser->getId();
         $rawGoogleUser = $googleUser->getRaw();
         $isVerified = filter_var(
@@ -69,18 +68,22 @@ class GoogleAuthController extends Controller
                 return to_route('login')->with('google_error', 'Akun ini sudah terhubung ke akun Google lain. Hubungi tim dukungan.');
             }
 
+            // Link the verified Google identity without changing an existing
+            // user's role or profile fields.
             $user->forceFill([
-                'email' => $email,
                 'email_verified_at' => $user->email_verified_at ?? now(),
                 'google_id' => $googleId,
             ])->save();
         } else {
+            // Social login creates and persists a buyer account. The password
+            // cast hashes this random, unusable password before it is stored.
             $user = User::query()->forceCreate([
                 'name' => $googleUser->getName() ?: Str::before($email, '@'),
                 'email' => $email,
                 'email_verified_at' => now(),
                 'google_id' => $googleId,
-                'password' => Hash::make(Str::random(40)),
+                'password' => Str::random(64),
+                'role' => User::ROLE_BUYER,
             ]);
         }
 

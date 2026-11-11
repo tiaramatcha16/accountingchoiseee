@@ -3,20 +3,18 @@
 use App\Models\User;
 
 test('login screen can be rendered', function () {
-    $response = $this->get('/login');
-
-    $response->assertStatus(200);
+    $this->get('/login')->assertStatus(200);
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+test('users can authenticate using the login screen and email casing is normalized', function () {
+    $user = User::factory()->create(['email' => 'test@example.com']);
 
     $response = $this->post('/login', [
-        'email' => $user->email,
+        'email' => '  TEST@EXAMPLE.COM  ',
         'password' => 'password',
     ]);
 
-    $this->assertAuthenticated();
+    $this->assertAuthenticatedAs($user);
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
