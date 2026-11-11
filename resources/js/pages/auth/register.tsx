@@ -1,25 +1,34 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
+import GoogleSignInButton from '@/components/auth/google-sign-in-button';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/auth-layout';
+import AuthEntryLayout from '@/layouts/auth/auth-entry-layout';
 
 type RegisterForm = {
     name: string;
     email: string;
+    phone: string;
+    institution: string;
+    city: string;
     password: string;
     password_confirmation: string;
 };
 
 export default function Register() {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm<Required<RegisterForm>>({
         name: '',
         email: '',
+        phone: '',
+        institution: '',
+        city: '',
         password: '',
         password_confirmation: '',
     });
@@ -32,12 +41,14 @@ export default function Register() {
     };
 
     return (
-        <AuthLayout title="Create an account" description="Enter your details below to create your account">
-            <Head title="Register" />
-            <form className="flex flex-col gap-6" onSubmit={submit}>
-                <div className="grid gap-6">
+        <AuthEntryLayout title="Buat Akun AccountingChoice" description="Silakan isi form untuk mendaftar." size="register">
+            <Head title="Daftar" />
+            <form className="flex flex-col gap-5" onSubmit={submit}>
+                <div className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="name" className="text-brand-ink text-sm font-medium">
+                            Nama
+                        </Label>
                         <Input
                             id="name"
                             type="text"
@@ -48,13 +59,16 @@ export default function Register() {
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             disabled={processing}
-                            placeholder="Full name"
+                            placeholder="Nama lengkap kamu"
+                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
                         />
                         <InputError message={errors.name} className="mt-2" />
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
+                        <Label htmlFor="email" className="text-brand-ink text-sm font-medium">
+                            Email
+                        </Label>
                         <Input
                             id="email"
                             type="email"
@@ -65,55 +79,148 @@ export default function Register() {
                             onChange={(e) => setData('email', e.target.value)}
                             disabled={processing}
                             placeholder="email@example.com"
+                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
                         />
                         <InputError message={errors.email} />
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="phone" className="text-brand-ink text-sm font-medium">
+                            No. Telepon
+                        </Label>
                         <Input
-                            id="password"
-                            type="password"
+                            id="phone"
+                            type="tel"
                             required
                             tabIndex={3}
-                            autoComplete="new-password"
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
+                            autoComplete="tel"
+                            value={data.phone}
+                            onChange={(e) => setData('phone', e.target.value)}
                             disabled={processing}
-                            placeholder="Password"
+                            placeholder="08xxxxxxxxxx"
+                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
                         />
+                        <InputError message={errors.phone} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="institution" className="text-brand-ink text-sm font-medium">
+                            Instansi
+                        </Label>
+                        <Input
+                            id="institution"
+                            type="text"
+                            required
+                            tabIndex={4}
+                            autoComplete="organization"
+                            value={data.institution}
+                            onChange={(e) => setData('institution', e.target.value)}
+                            disabled={processing}
+                            placeholder="Masukkan instansi kamu"
+                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
+                        />
+                        <InputError message={errors.institution} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="city" className="text-brand-ink text-sm font-medium">
+                            Kota Domisili
+                        </Label>
+                        <Input
+                            id="city"
+                            type="text"
+                            required
+                            tabIndex={5}
+                            autoComplete="address-level2"
+                            value={data.city}
+                            onChange={(e) => setData('city', e.target.value)}
+                            disabled={processing}
+                            placeholder="Masukkan kota domisili kamu"
+                            className="border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
+                        />
+                        <InputError message={errors.city} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="password" className="text-brand-ink text-sm font-medium">
+                            Password
+                        </Label>
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                required
+                                tabIndex={6}
+                                autoComplete="new-password"
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                disabled={processing}
+                                placeholder="Password"
+                                className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 pr-10 placeholder:text-black/40"
+                            />
+                            <button
+                                type="button"
+                                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                aria-controls="password"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="hover:text-brand-primary focus-visible:outline-brand-primary absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45 transition focus-visible:outline-2"
+                            >
+                                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            </button>
+                        </div>
                         <InputError message={errors.password} />
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password_confirmation">Confirm password</Label>
-                        <Input
-                            id="password_confirmation"
-                            type="password"
-                            required
-                            tabIndex={4}
-                            autoComplete="new-password"
-                            value={data.password_confirmation}
-                            onChange={(e) => setData('password_confirmation', e.target.value)}
-                            disabled={processing}
-                            placeholder="Confirm password"
-                        />
+                        <Label htmlFor="password_confirmation" className="text-brand-ink text-sm font-medium">
+                            Konfirmasi password
+                        </Label>
+                        <div className="relative">
+                            <Input
+                                id="password_confirmation"
+                                type={showPasswordConfirmation ? 'text' : 'password'}
+                                required
+                                tabIndex={7}
+                                autoComplete="new-password"
+                                value={data.password_confirmation}
+                                onChange={(e) => setData('password_confirmation', e.target.value)}
+                                disabled={processing}
+                                placeholder="Konfirmasi password"
+                                className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 pr-10 placeholder:text-black/40"
+                            />
+                            <button
+                                type="button"
+                                aria-label={showPasswordConfirmation ? 'Sembunyikan password' : 'Tampilkan password'}
+                                aria-controls="password_confirmation"
+                                onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                                className="hover:text-brand-primary focus-visible:outline-brand-primary absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45 transition focus-visible:outline-2"
+                            >
+                                {showPasswordConfirmation ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            </button>
+                        </div>
                         <InputError message={errors.password_confirmation} />
                     </div>
 
-                    <Button type="submit" className="mt-2 w-full" tabIndex={5} disabled={processing}>
+                    <Button
+                        type="submit"
+                        className="bg-auth-action hover:bg-brand-primary h-10 w-full rounded-lg font-semibold text-white"
+                        tabIndex={8}
+                        disabled={processing}
+                    >
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Create account
+                        {processing ? 'Memproses...' : 'Buat akun'}
                     </Button>
                 </div>
 
-                <div className="text-muted-foreground text-center text-sm">
-                    Already have an account?{' '}
-                    <TextLink href={route('login')} tabIndex={6}>
-                        Log in
+                <GoogleSignInButton />
+
+                <div className="text-center text-sm text-black/55">
+                    Sudah memiliki akun?{' '}
+                    <TextLink href={route('login')} className="text-brand-primary font-semibold" tabIndex={9}>
+                        Masuk
                     </TextLink>
                 </div>
             </form>
-        </AuthLayout>
+        </AuthEntryLayout>
     );
 }
