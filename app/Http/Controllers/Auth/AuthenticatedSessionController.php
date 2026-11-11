@@ -18,7 +18,6 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
-            'googleError' => $request->session()->get('google_error'),
             'roleError' => $request->session()->get('role_error'),
             'adminMode' => $request->routeIs('admin.login'),
         ]);
@@ -26,12 +25,12 @@ class AuthenticatedSessionController extends Controller
 
     public function storeBuyer(LoginRequest $request): RedirectResponse
     {
-        return $this->authenticateForRole($request, UserRole::BUYER);
+        return $this->authenticateForRole($request, 'buyer');
     }
 
     public function storeAdmin(LoginRequest $request): RedirectResponse
     {
-        return $this->authenticateForRole($request, UserRole::ADMIN);
+        return $this->authenticateForRole($request, 'admin');
     }
 
     private function authenticateForRole(LoginRequest $request, string $expectedRole): RedirectResponse
@@ -39,13 +38,13 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $user = $request->user();
 
-        if (($user->role ?? UserRole::BUYER) !== $expectedRole) {
+        if (($user->role ?? 'buyer') !== $expectedRole) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            $loginRoute = $expectedRole === UserRole::ADMIN ? 'admin.login' : 'login';
-            $message = $expectedRole === UserRole::ADMIN
+            $loginRoute = $expectedRole === 'admin' ? 'admin.login' : 'login';
+            $message = $expectedRole === 'admin'
                 ? 'Akun ini bukan akun admin. Gunakan login pembeli.'
                 : 'Akun admin harus masuk melalui halaman login admin.';
 
@@ -65,12 +64,4 @@ class AuthenticatedSessionController extends Controller
 
         return redirect('/');
     }
-}
-
-/** Internal role identifiers for the login controller. */
-final class UserRole
-{
-    public const BUYER = 'buyer';
-
-    public const ADMIN = 'admin';
 }

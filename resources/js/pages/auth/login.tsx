@@ -2,7 +2,6 @@ import { Head, useForm } from '@inertiajs/react';
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
-import GoogleSignInButton from '@/components/auth/google-sign-in-button';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -14,19 +13,20 @@ import AuthEntryLayout from '@/layouts/auth/auth-entry-layout';
 type LoginForm = { email: string; password: string; remember: boolean };
 interface LoginProps {
     status?: string;
-    googleError?: string;
     roleError?: string;
     canResetPassword: boolean;
     adminMode?: boolean;
 }
 
-export default function Login({ status, googleError, roleError, canResetPassword, adminMode = false }: LoginProps) {
+export default function Login({ status, roleError, canResetPassword, adminMode = false }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({ email: '', password: '', remember: false });
 
     const submit: FormEventHandler = (event) => {
         event.preventDefault();
-        post(adminMode ? route('admin.login.store') : route('login'), { onFinish: () => reset('password') });
+        post(adminMode ? route('admin.login.store') : route('login.store'), {
+            onFinish: () => reset('password'),
+        });
     };
 
     return (
@@ -62,19 +62,20 @@ export default function Login({ status, googleError, roleError, canResetPassword
                         <Label htmlFor="remember" className="text-xs font-normal">Ingat saya</Label>
                     </div>
                     <Button type="submit" disabled={processing} className="bg-auth-action h-10 w-full rounded-lg font-semibold text-white">
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}{processing ? 'Memproses...' : adminMode ? 'Masuk Admin' : 'Masuk sebagai Pembeli'}
+                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                        {processing ? 'Memproses...' : adminMode ? 'Masuk Admin' : 'Masuk sebagai Pembeli'}
                     </Button>
                 </div>
-
-                {!adminMode && <>
-                    <GoogleSignInButton />
-                    <div className="text-center text-sm text-black/55">Belum punya akun? <TextLink href={route('register')} className="text-brand-primary font-semibold">Daftar pembeli</TextLink></div>
-                    <div className="text-center text-xs text-black/45">Pemilik toko? <TextLink href={route('admin.login')} className="text-brand-primary font-semibold">Login admin</TextLink></div>
-                </>}
-                {adminMode && <div className="text-center text-sm text-black/55">Pembeli? <TextLink href={route('login')} className="text-brand-primary font-semibold">Login pembeli</TextLink></div>}
+                {!adminMode ? (
+                    <>
+                        <div className="text-center text-sm text-black/55">Belum punya akun? <TextLink href={route('register')} className="text-brand-primary font-semibold">Daftar pembeli</TextLink></div>
+                        <div className="text-center text-xs text-black/45">Pemilik toko? <TextLink href={route('admin.login')} className="text-brand-primary font-semibold">Login admin</TextLink></div>
+                    </>
+                ) : (
+                    <div className="text-center text-sm text-black/55">Pembeli? <TextLink href={route('login')} className="text-brand-primary font-semibold">Login pembeli</TextLink></div>
+                )}
             </form>
             {status && <div role="status" className="mt-4 text-center text-sm font-medium text-emerald-700">{status}</div>}
-            {!adminMode && googleError && <div role="alert" className="mt-4 text-center text-sm font-medium text-red-700">{googleError}</div>}
         </AuthEntryLayout>
     );
 }

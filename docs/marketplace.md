@@ -2,22 +2,24 @@
 
 ## Setup
 
-After pulling branch `dev`, run `php artisan migrate`, then run the normal Laravel/Vite development commands. Grant an existing account admin access with `php artisan users:make-admin email@example.com`. Public registration and Google sign-in always create buyer accounts.
+After pulling branch `dev`, run `php artisan migrate` and start the Laravel/Vite development servers. Public registration creates buyer accounts only. The buyer login is `/login`; the owner/admin login is `/admin/login`.
 
-## Dashboards and workflows
+Promote the owner's already-registered account to admin from the project terminal:
 
-- Buyers land on `/dashboard` for order/payment stats, recent purchases, featured templates, and links to catalog, orders, and seller application.
-- Admins opening `/dashboard` are routed to `/admin`, with catalog moderation, order review, user roles, seller approvals, sales metrics, and navigation.
-- Approved sellers opening `/dashboard` are routed to `/seller/products` to manage private uploads submitted as drafts.
+```sh
+php artisan users:make-admin owner@example.com
+```
+
+No Google sign-in is enabled. Buyers and admins use email/password, and the admin account must be provisioned manually.
 
 ## Buyer workflow
 
-Buyers browse `/templates`, create an order, and track it at `/my-orders`. Files stay on the private Laravel `local` disk and are served only after authentication, checking that the order belongs to the buyer, the item belongs to the order, and the order is marked paid.
+Buyers browse `/templates`, create an order, and track it at `/my-orders`. Files remain on Laravel's private `local` disk and can only be downloaded after the buyer owns the order and an admin verifies payment.
 
-## Seller workflow
+## Owner/admin workflow
 
-A buyer submits an application at `/become-a-seller`. Admins review applications at `/admin/seller-applications`; approval grants seller role. Sellers upload `.xlsx`/`.xls` files from `/seller/products`. Uploads are stored privately and created as drafts; only admin moderation can publish them.
+The owner logs in at `/admin/login`, then manages Excel products at `/admin/products`, order verification at `/admin/orders`, and user accounts at `/admin/users`. New uploads are drafts until reviewed and published.
 
 ## Payment limitation
 
-This version creates pending orders but does not collect money. Admin payment verification is intentionally manual. Do not mark an order paid unless payment has actually been confirmed. Payment-provider checkout/webhooks, refunds, seller payouts, and automated email receipts require payment account credentials and deployment configuration.
+Orders are created as pending. This branch does not collect money automatically; verify actual payment outside the app before marking an order paid. Payment provider integration and webhooks are not configured.
