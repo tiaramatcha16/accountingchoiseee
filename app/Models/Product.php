@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Product extends Model
+{
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_ARCHIVED = 'archived';
+
+    protected $fillable = [
+        'created_by', 'title', 'slug', 'category', 'description', 'price',
+        'file_path', 'original_filename', 'status', 'download_count',
+    ];
+
+    protected function casts(): array
+    {
+        return ['price' => 'integer', 'download_count' => 'integer'];
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+}
