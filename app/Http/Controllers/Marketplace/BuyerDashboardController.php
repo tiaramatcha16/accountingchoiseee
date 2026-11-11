@@ -17,16 +17,15 @@ class BuyerDashboardController extends Controller
 
         return Inertia::render('marketplace/dashboard', [
             'stats' => [
-                'orders' => Order::query()->where('buyer_id', $buyerId)->count(),
-                'pending' => Order::query()->where('buyer_id', $buyerId)->where('status', Order::STATUS_PENDING)->count(),
-                'paid' => Order::query()->where('buyer_id', $buyerId)->where('status', Order::STATUS_PAID)->count(),
-                'totalSpent' => Order::query()->where('buyer_id', $buyerId)->where('status', Order::STATUS_PAID)->sum('total_amount'),
+                'orders' => Order::where('buyer_id', $buyerId)->count(),
+                'pending' => Order::where('buyer_id', $buyerId)->where('status', Order::STATUS_PENDING)->count(),
+                'paid' => Order::where('buyer_id', $buyerId)->where('status', Order::STATUS_PAID)->count(),
+                'totalSpent' => Order::where('buyer_id', $buyerId)->where('status', Order::STATUS_PAID)->sum('total_amount'),
             ],
-            'recentOrders' => Order::query()->where('buyer_id', $buyerId)
-                ->with('items:id,order_id,product_title,unit_price')
-                ->latest()->limit(5)->get(),
-            'featuredProducts' => Product::query()->where('status', Product::STATUS_PUBLISHED)
-                ->latest('published_at')->latest('id')->limit(4)
+            'recentOrders' => Order::where('buyer_id', $buyerId)
+                ->with('items:id,order_id,product_title,unit_price')->latest()->limit(5)->get(),
+            'featuredProducts' => Product::where('status', Product::STATUS_PUBLISHED)
+                ->orderByDesc('published_at')->orderByDesc('id')->limit(4)
                 ->get(['id', 'title', 'slug', 'category', 'description', 'price']),
         ]);
     }

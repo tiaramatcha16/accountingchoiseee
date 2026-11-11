@@ -12,9 +12,9 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_BUYER = 'buyer';
-    public const ROLE_SELLER = 'seller';
     public const ROLE_ADMIN = 'admin';
 
+    /** Keep role outside fillable so public forms can never grant privileges. */
     protected $fillable = [
         'name', 'email', 'phone', 'institution', 'city', 'google_id', 'password',
     ];
@@ -28,11 +28,6 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
-    }
-
-    public function isSeller(): bool
-    {
-        return $this->role === self::ROLE_SELLER;
+        return ($this->role ?? self::ROLE_BUYER) === self::ROLE_ADMIN;
     }
 }

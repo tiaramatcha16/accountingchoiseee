@@ -13,8 +13,7 @@ class DashboardController extends Controller
 {
     public function __invoke(): Response
     {
-        $paidOrders = Order::query()->where('status', Order::STATUS_PAID);
-        $monthlyRows = Order::query()->where('status', Order::STATUS_PAID)
+        $salesByMonth = Order::query()->where('status', Order::STATUS_PAID)
             ->where('paid_at', '>=', now()->subMonths(5)->startOfMonth())
             ->get(['paid_at', 'total_amount'])
             ->groupBy(fn (Order $order) => $order->paid_at?->format('Y-m'))
@@ -30,11 +29,11 @@ class DashboardController extends Controller
                 'pendingOrders' => Order::where('status', Order::STATUS_PENDING)->count(),
                 'cancelledOrders' => Order::where('status', Order::STATUS_CANCELLED)->count(),
                 'users' => User::count(),
-                'revenue' => $paidOrders->sum('total_amount'),
+                'revenue' => Order::where('status', Order::STATUS_PAID)->sum('total_amount'),
             ],
             'recentOrders' => Order::with('buyer:id,name,email')->latest()->limit(8)->get(),
             'topProducts' => Product::withCount('orderItems')->orderByDesc('order_items_count')->limit(5)->get(['id', 'title', 'price', 'status']),
-            'salesByMonth' => $monthlyRows,
+            'salesByMonth' => $salesByMonth,
         ]);
     }
 }
