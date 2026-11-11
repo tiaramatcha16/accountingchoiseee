@@ -26,12 +26,12 @@ class AuthenticatedSessionController extends Controller
 
     public function storeBuyer(LoginRequest $request): RedirectResponse
     {
-        return $this->authenticateForRole($request, 'buyer');
+        return $this->authenticateForRole($request, UserRole::BUYER);
     }
 
     public function storeAdmin(LoginRequest $request): RedirectResponse
     {
-        return $this->authenticateForRole($request, 'admin');
+        return $this->authenticateForRole($request, UserRole::ADMIN);
     }
 
     private function authenticateForRole(LoginRequest $request, string $expectedRole): RedirectResponse
@@ -39,14 +39,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $user = $request->user();
 
-        if (($user->role ?? 'buyer') !== $expectedRole) {
+        if (($user->role ?? UserRole::BUYER) !== $expectedRole) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            $loginRoute = $expectedRole === 'admin' ? 'admin.login' : 'login';
-            $message = $expectedRole === 'admin'
-                ? 'Akun ini bukan akun admin. Gunakan halaman login pembeli.'
+            $loginRoute = $expectedRole === UserRole::ADMIN ? 'admin.login' : 'login';
+            $message = $expectedRole === UserRole::ADMIN
+                ? 'Akun ini bukan akun admin. Gunakan login pembeli.'
                 : 'Akun admin harus masuk melalui halaman login admin.';
 
             return to_route($loginRoute)->with('role_error', $message);
@@ -65,4 +65,12 @@ class AuthenticatedSessionController extends Controller
 
         return redirect('/');
     }
+}
+
+/** Internal role identifiers for the login controller. */
+final class UserRole
+{
+    public const BUYER = 'buyer';
+
+    public const ADMIN = 'admin';
 }

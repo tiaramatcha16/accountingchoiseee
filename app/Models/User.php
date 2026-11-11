@@ -12,22 +12,35 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_BUYER = 'buyer';
+
     public const ROLE_ADMIN = 'admin';
 
-    /** Keep role outside fillable so public forms can never grant privileges. */
+    /** Public registration must never be able to assign roles. */
     protected $fillable = [
-        'name', 'email', 'phone', 'institution', 'city', 'google_id', 'password',
+        'name',
+        'email',
+        'phone',
+        'institution',
+        'city',
+        'google_id',
+        'password',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     protected function casts(): array
     {
-        return ['email_verified_at' => 'datetime', 'password' => 'hashed'];
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 
     public function isAdmin(): bool
     {
-        return ($this->role ?? self::ROLE_BUYER) === self::ROLE_ADMIN;
+        return $this->role === self::ROLE_ADMIN;
     }
 }
