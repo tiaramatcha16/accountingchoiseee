@@ -7,11 +7,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
-    protected $fillable = ['order_id', 'product_id', 'product_title', 'unit_price'];
+    protected $hidden = ['file_path', 'google_sheet_id', 'delivery_file_id'];
+
+    protected $appends = ['delivery_type'];
+
+    protected $fillable = [
+        'order_id', 'product_id', 'product_title', 'unit_price', 'file_path', 'file_name',
+        'google_sheet_id', 'delivery_file_id', 'delivery_url',
+    ];
 
     protected function casts(): array
     {
         return ['unit_price' => 'integer'];
+    }
+
+    public function getDeliveryTypeAttribute(): string
+    {
+        return filled($this->google_sheet_id) ? 'google_sheets' : 'file';
     }
 
     public function order(): BelongsTo

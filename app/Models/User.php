@@ -12,7 +12,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_BUYER = 'buyer';
-
+    public const ROLE_SELLER = 'seller';
     public const ROLE_ADMIN = 'admin';
 
     /** Public registration must never be able to assign roles. */
@@ -42,5 +42,20 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isSeller(): bool
+    {
+        return ($this->role ?? self::ROLE_BUYER) === self::ROLE_SELLER;
+    }
+
+    public function isBuyer(): bool
+    {
+        return ($this->role ?? self::ROLE_BUYER) === self::ROLE_BUYER;
+    }
+
+    public function cartItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CartItem::class);
     }
 }

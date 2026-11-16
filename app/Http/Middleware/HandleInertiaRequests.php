@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\ChatConversation;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -46,6 +47,31 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'adminChatNeedsReplyCount' => fn () => $request->user()?->isAdmin()
+                ? ChatConversation::query()->where('status', ChatConversation::STATUS_NEEDS_ADMIN)->count()
+                : 0,
+            'cart' => function () use ($request): ?array {
+                if (! $request->user()) {
+                    return null;
+                }
+
+                return [
+                    'count' => $request->user()->cartItems()->count(),
+                    'items' => $request->user()->cartItems()
+                        ->with('product:id,title,category,price,slug')
+                        ->get()
+                        ->filter(fn ($item) => $item->product !== null)
+                        ->map(fn ($item) => [
+                            'id' => $item->product->id,
+                            'title' => $item->product->title,
+                            'category' => $item->product->category,
+                            'price' => $item->product->price,
+                            'slug' => $item->product->slug,
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            },
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

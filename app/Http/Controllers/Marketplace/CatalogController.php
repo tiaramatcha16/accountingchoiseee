@@ -33,4 +33,13 @@ class CatalogController extends Controller
                 ->select('category')->distinct()->orderBy('category')->pluck('category'),
         ]);
     }
+
+    public function show(Product $product): Response
+    {
+        abort_unless($product->status === Product::STATUS_PUBLISHED, 404);
+
+        return Inertia::render('marketplace/product', [
+            'product' => $product->only(['id', 'title', 'slug', 'category', 'description', 'price']),
+        ]);
+    }
 }

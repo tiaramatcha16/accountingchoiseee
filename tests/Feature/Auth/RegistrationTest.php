@@ -6,12 +6,12 @@ test('registration screen can be rendered', function () {
     $this->get('/register')->assertStatus(200);
 });
 
-test('new users are persisted as buyers and signed in', function () {
+test('new users are persisted as buyers and redirected to the dashboard', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',
         'email' => 'TEST@example.com',
         'phone' => '081234567890',
-        'institution' => 'AccountingChoice',
+        'institution' => 'Personal',
         'city' => 'Jakarta',
         'password' => 'password',
         'password_confirmation' => 'password',
@@ -24,7 +24,7 @@ test('new users are persisted as buyers and signed in', function () {
         'name' => 'Test User',
         'email' => 'test@example.com',
         'phone' => '081234567890',
-        'institution' => 'AccountingChoice',
+        'institution' => 'Personal',
         'city' => 'Jakarta',
         'role' => 'buyer',
     ]);
@@ -32,4 +32,17 @@ test('new users are persisted as buyers and signed in', function () {
     $user = \App\Models\User::query()->where('email', 'test@example.com')->firstOrFail();
     expect(Hash::check('password', $user->password))->toBeTrue();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('registration requires phone, institution, and city', function () {
+    $response = $this->post('/register', [
+        'name' => 'No Phone User',
+        'email' => 'nophone@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors(['phone', 'institution', 'city']);
+    $this->assertDatabaseMissing('users', ['email' => 'nophone@example.com']);
 });

@@ -22,10 +22,26 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface CartItemData {
+    id: number;
+    cart_item_id?: number;
+    title: string;
+    category: string;
+    price: number;
+    slug?: string;
+}
+
+export interface SharedCart {
+    count: number;
+    items: CartItemData[];
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    cart?: SharedCart | null;
+    adminChatNeedsReplyCount?: number;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     [key: string]: unknown;

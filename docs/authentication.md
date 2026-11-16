@@ -1,43 +1,61 @@
 # Authentication setup (branch `dev`)
 
-The application stores password and Google accounts in Laravel's `users` table. Public registration and first-time Google sign-in create buyer accounts. The public forms do not accept a role; admin access must be granted by an operator.
+The application stores user credentials in Laravel's `users` table. Public registration creates buyer accounts (`buyer`). The public form only requires name, email, optional phone number, and password (institution and city/domisili inputs have been removed). Admin access is separated and provisioned by the store owner configuration in `.env` / database seeder.
 
-## Database
+## Default Roles & Access
 
-1. Copy `.env.example` to `.env` and configure the database connection for your environment.
-2. Generate the application key if this is a fresh checkout: `php artisan key:generate`.
-3. Run migrations: `php artisan migrate`.
+* **Buyer (`buyer`)**: Default role for all public registrations. Redirected to `/dashboard` upon login.
+* **Admin (`admin`)**: Has access to `/admin` routes. Redirected directly to `/admin` (`admin.dashboard`) upon login.
+* **Seller (`seller`)**: Can manage and submit template products for review.
 
-The role migration adds `users.role` with a `buyer` default. Existing users also receive the buyer role when the migration runs. Back up production data before running schema changes.
+## Admin Configuration
 
-## Google OAuth
+The admin credentials are configured in `.env`:
 
-1. Create an OAuth 2.0 Client ID in Google Cloud Console, choosing **Web application**.
-2. Add the exact callback URL for the environment to **Authorized redirect URIs**. For local development with the defaults, use `http://localhost/auth/google/callback`.
-3. Set these values in the local `.env` (never commit real secrets):
-
-```dotenv
-APP_URL=http://localhost
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+```env
+ADMIN_NAME="admin"
+ADMIN_EMAIL="kutirtiara16@gmail.com"
+ADMIN_PASSWORD="rahasia"
 ```
 
-4. Clear cached configuration after changing environment values: `php artisan config:clear`.
-5. Start Laravel and Vite using the repository's normal development commands, then test both email/password and Google flows.
+To create or update the admin account in your local database, run:
 
-For deployed environments, use HTTPS and configure the redirect URI to exactly match the deployed domain. Keep the client secret only in the server environment, not in frontend variables.
+```sh
+php artisan db:seed
+```
+
+This will automatically create/update your admin account with role `admin` and encrypted password.
 
 ## Manually granting admin access
 
-Only an operator with command-line access should run:
+An operator can also grant admin rights to any existing user email:
 
 ```sh
 php artisan users:make-admin user@example.com
 ```
 
-This command only promotes an existing account and cannot be invoked through public registration or Google sign-in.
+## Google login
+
+Google login and registration use Laravel Socialite. In Google Cloud Console, create an OAuth client for a web application and register the exact callback URL:
+
+```text
+https://your-domain/auth/google/callback
+```
+
+For local development, use the same host and port as `APP_URL`, for example `http://127.0.0.1:8000/auth/google/callback`. Set the matching values in `.env`:
+
+```env
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+```
+
+The callback requires a verified Google email. A new Google account is created as a buyer; an existing account with the same verified email can be linked without changing its role. Google Drive OAuth credentials (`GOOGLE_DRIVE_*`) are configured separately for spreadsheet copy and delivery.
 
 ## Tests
 
-Run the authentication feature tests with `php artisan test --testsuite=Feature` (or run the full suite with `php artisan test`). Google provider behavior is mocked in tests; a real OAuth client is only needed for a manual browser test.
+Run the test suite with:
+
+```sh
+php artisan test
+```

@@ -14,9 +14,11 @@ class Product extends Model
 
     public const STATUS_ARCHIVED = 'archived';
 
+    protected $hidden = ['file_path', 'google_sheet_id', 'usage_guide'];
+
     protected $fillable = [
         'created_by', 'title', 'slug', 'category', 'description', 'price',
-        'file_path', 'original_filename', 'status', 'download_count', 'published_at',
+        'file_path', 'original_filename', 'google_sheet_id', 'usage_guide', 'status', 'download_count', 'published_at',
     ];
 
     protected function casts(): array

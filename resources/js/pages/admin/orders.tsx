@@ -1,11 +1,187 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { type FormEvent } from 'react';
+
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-interface Buyer { name: string; email: string }
-interface Item { id: number; product_title: string; unit_price: number }
-interface Order { id: number; order_number: string; status: string; total_amount: number; created_at: string; payment_reference: string | null; buyer: Buyer; items: Item[] }
-interface Paginated<T> { data: T[]; links: { url: string | null; label: string; active: boolean }[] }
-const money = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
-function OrderActions({ order }: { order: Order }) { const { data, setData, processing } = useForm({ payment_reference: order.payment_reference ?? '' }); function submit(status: string) { router.patch(`/admin/orders/${order.id}/status`, { status, payment_reference: data.payment_reference || null }, { preserveScroll: true }); } return order.status === 'pending' ? <div className="flex flex-wrap gap-2"><input aria-label="Referensi pembayaran" placeholder="Referensi (opsional)" className="w-40 rounded-lg border-gray-300 text-xs" value={data.payment_reference} onChange={e => setData('payment_reference', e.target.value)}/><button disabled={processing} onClick={() => submit('paid')} className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white">Verifikasi lunas</button><button disabled={processing} onClick={() => submit('cancelled')} className="rounded-lg border px-3 py-2 text-xs">Batalkan</button></div> : <span className="text-sm text-gray-500">Status final</span>; }
-export default function AdminOrders({ orders, filters, status }: { orders: Paginated<Order>; filters: { q?: string; status?: string }; status?: string }) { const breadcrumbs: BreadcrumbItem[] = [{ title: 'Admin', href: '/admin' }, { title: 'Pesanan', href: '/admin/orders' }]; const { data, setData } = useForm({ q: filters.q ?? '', status: filters.status ?? '' }); function search(event: FormEvent) { event.preventDefault(); router.get('/admin/orders', data, { preserveState: true }); } return <AppLayout breadcrumbs={breadcrumbs}><Head title="Kelola Pesanan"/><main className="mx-auto w-full max-w-7xl space-y-6 p-6 lg:p-10"><header><p className="text-sm font-semibold uppercase tracking-widest text-emerald-700">Administrasi</p><h1 className="mt-2 text-3xl font-bold">Pesanan pembeli</h1><p className="mt-2 text-gray-600">Hanya tandai lunas setelah pembayaran benar-benar terverifikasi.</p></header>{status && <div role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">{status}</div>}<form onSubmit={search} className="flex flex-wrap gap-3 rounded-xl border bg-white p-4"><input aria-label="Cari pesanan atau pembeli" placeholder="Nomor pesanan, nama, email" className="min-w-60 flex-1 rounded-lg border-gray-300" value={data.q} onChange={e => setData('q', e.target.value)}/><select aria-label="Filter status" className="rounded-lg border-gray-300" value={data.status} onChange={e => setData('status', e.target.value)}><option value="">Semua status</option><option value="pending">Pending</option><option value="paid">Lunas</option><option value="cancelled">Dibatalkan</option></select><button className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white">Filter</button></form><div className="overflow-x-auto rounded-2xl border bg-white"><table className="w-full min-w-[950px] text-left text-sm"><thead className="bg-gray-50 text-gray-600"><tr><th className="p-4">Pesanan / Pembeli</th><th className="p-4">Item</th><th className="p-4">Total</th><th className="p-4">Status</th><th className="p-4">Verifikasi</th></tr></thead><tbody className="divide-y">{orders.data.map(order => <tr key={order.id} className="align-top"><td className="p-4"><strong>{order.order_number}</strong><p>{order.buyer.name}</p><p className="text-gray-500">{order.buyer.email}</p><p className="text-xs text-gray-400">{new Date(order.created_at).toLocaleString('id-ID')}</p></td><td className="p-4">{order.items.map(item => <p key={item.id}>{item.product_title}</p>)}</td><td className="p-4 font-semibold">{money(order.total_amount)}</td><td className="p-4"><span className="rounded-full bg-gray-100 px-3 py-1">{order.status}</span>{order.payment_reference && <p className="mt-2 text-xs text-gray-500">Ref: {order.payment_reference}</p>}</td><td className="p-4"><OrderActions order={order}/></td></tr>)}</tbody></table>{orders.data.length === 0 && <p className="p-8 text-center text-gray-500">Tidak ada pesanan yang cocok.</p>}</div><nav className="flex gap-2">{orders.links.map((link, index) => link.url ? <Link key={index} href={link.url} className={`rounded border px-3 py-2 text-sm ${link.active ? 'bg-emerald-700 text-white' : ''}`} dangerouslySetInnerHTML={{ __html: link.label }}/> : null)}</nav></main></AppLayout>; }
+
+interface Buyer {
+    name: string;
+    email: string;
+}
+
+interface Item {
+    id: number;
+    product_title: string;
+    unit_price: number;
+}
+
+interface Order {
+    id: number;
+    order_number: string;
+    status: 'pending' | 'paid' | 'cancelled';
+    total_amount: number;
+    created_at: string;
+    payment_reference: string | null;
+    payment_url: string | null;
+    customer_name: string | null;
+    customer_phone: string | null;
+    customer_email: string | null;
+    delivery_email_sent_at: string | null;
+    buyer: Buyer;
+    items: Item[];
+}
+
+interface Paginated<T> {
+    data: T[];
+    links: { url: string | null; label: string; active: boolean }[];
+}
+
+const money = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+    }).format(amount);
+
+export default function AdminOrders({
+    orders,
+    filters,
+    status,
+}: {
+    orders: Paginated<Order>;
+    filters: { q?: string; status?: string };
+    status?: string;
+}) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Admin', href: '/admin' },
+        { title: 'Pesanan', href: '/admin/orders' },
+    ];
+    const { data, setData } = useForm({ q: filters.q ?? '', status: filters.status ?? '' });
+
+    function search(event: FormEvent) {
+        event.preventDefault();
+        router.get('/admin/orders', data, { preserveState: true });
+    }
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Kelola Pesanan" />
+            <main className="mx-auto w-full max-w-7xl space-y-6 p-6 lg:p-10">
+                <header>
+                    <p className="text-sm font-semibold tracking-widest text-emerald-700 uppercase">Administrasi</p>
+                    <h1 className="mt-2 text-3xl font-bold">Pesanan pembeli</h1>
+                    <p className="mt-2 text-gray-600">Status pembayaran diperbarui oleh notifikasi gateway setelah pembayaran terverifikasi.</p>
+                </header>
+
+                {status && (
+                    <div role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">
+                        {status}
+                    </div>
+                )}
+
+                <form onSubmit={search} className="flex flex-wrap gap-3 rounded-xl border bg-white p-4">
+                    <input
+                        aria-label="Cari pesanan atau pembeli"
+                        placeholder="Nomor pesanan, nama, email, atau nomor HP"
+                        className="min-w-60 flex-1 rounded-lg border-gray-300"
+                        value={data.q}
+                        onChange={(event) => setData('q', event.target.value)}
+                    />
+                    <select
+                        aria-label="Filter status"
+                        className="rounded-lg border-gray-300"
+                        value={data.status}
+                        onChange={(event) => setData('status', event.target.value)}
+                    >
+                        <option value="">Semua status</option>
+                        <option value="pending">Menunggu pembayaran</option>
+                        <option value="paid">Lunas</option>
+                        <option value="cancelled">Dibatalkan</option>
+                    </select>
+                    <button className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white">Filter</button>
+                </form>
+
+                <div className="overflow-x-auto rounded-2xl border bg-white">
+                    <table className="w-full min-w-[1050px] text-left text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th className="p-4">Pesanan</th>
+                                <th className="p-4">Penerima</th>
+                                <th className="p-4">Item</th>
+                                <th className="p-4">Total</th>
+                                <th className="p-4">Pembayaran</th>
+                                <th className="p-4">Pengiriman akses</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {orders.data.map((order) => (
+                                <tr key={order.id} className="align-top">
+                                    <td className="p-4">
+                                        <strong>{order.order_number}</strong>
+                                        <p className="mt-1 text-xs text-gray-500">{new Date(order.created_at).toLocaleString('id-ID')}</p>
+                                    </td>
+                                    <td className="p-4">
+                                        <p className="font-semibold">{order.customer_name ?? order.buyer.name}</p>
+                                        <p className="text-gray-600">{order.customer_email ?? order.buyer.email}</p>
+                                        {order.customer_phone && <p className="text-gray-500">{order.customer_phone}</p>}
+                                    </td>
+                                    <td className="p-4">
+                                        {order.items.map((item) => (
+                                            <p key={item.id}>{item.product_title}</p>
+                                        ))}
+                                    </td>
+                                    <td className="p-4 font-semibold">{money(order.total_amount)}</td>
+                                    <td className="p-4">
+                                        <span className="rounded-full bg-gray-100 px-3 py-1">
+                                            {order.status === 'paid'
+                                                ? 'Lunas'
+                                                : order.status === 'pending'
+                                                  ? 'Menunggu pembayaran QRIS'
+                                                  : 'Dibatalkan'}
+                                        </span>
+                                        {order.payment_reference && (
+                                            <p className="mt-2 text-xs text-gray-500">ID transaksi: {order.payment_reference}</p>
+                                        )}
+                                        {order.status === 'pending' && order.payment_url && (
+                                            <a
+                                                href={order.payment_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-2 block text-xs font-semibold text-emerald-700 underline"
+                                            >
+                                                Buka pembayaran
+                                            </a>
+                                        )}
+                                    </td>
+                                    <td className="p-4">
+                                        {order.delivery_email_sent_at ? (
+                                            <span className="font-semibold text-emerald-700">Akses dikirim</span>
+                                        ) : order.status === 'paid' ? (
+                                            <span className="text-amber-700">Belum terkirim</span>
+                                        ) : (
+                                            <span className="text-gray-500">Menunggu pembayaran</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {orders.data.length === 0 && <p className="p-8 text-center text-gray-500">Belum ada pesanan.</p>}
+                </div>
+
+                <nav className="flex gap-2">
+                    {orders.links.map((link, index) =>
+                        link.url ? (
+                            <Link
+                                key={index}
+                                href={link.url}
+                                className={`rounded border px-3 py-2 text-sm ${link.active ? 'bg-emerald-700 text-white' : ''}`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                            />
+                        ) : null,
+                    )}
+                </nav>
+            </main>
+        </AppLayout>
+    );
+}

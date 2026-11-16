@@ -6,8 +6,10 @@ test('guests are redirected to the login page', function () {
     $this->get('/dashboard')->assertRedirect('/login');
 });
 
-test('authenticated users can visit the dashboard', function () {
+test('authenticated buyers can visit their dashboard', function () {
     $this->actingAs($user = User::factory()->create());
 
-    $this->get('/dashboard')->assertOk();
+    $this->get('/dashboard')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('marketplace/dashboard'));
 });

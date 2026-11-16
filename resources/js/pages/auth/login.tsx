@@ -1,11 +1,11 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthEntryLayout from '@/layouts/auth/auth-entry-layout';
@@ -37,6 +37,15 @@ export default function Login({ status, roleError, canResetPassword, adminMode =
             <Head title={adminMode ? 'Login Admin' : 'Login Pembeli'} />
             {adminMode && <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Akses khusus admin. Akun admin dibuat manual, bukan melalui pendaftaran pembeli.</div>}
             {roleError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{roleError}</div>}
+            {status && (
+                <div
+                    role="status"
+                    className="animate-in fade-in slide-in-from-top-2 mb-5 flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm"
+                >
+                    <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+                    <p className="leading-snug">{status}</p>
+                </div>
+            )}
             <form className="flex flex-col gap-5" onSubmit={submit}>
                 <div className="grid gap-5">
                     <div className="grid gap-2">
@@ -61,10 +70,15 @@ export default function Login({ status, roleError, canResetPassword, adminMode =
                         <Checkbox id="remember" checked={data.remember} onCheckedChange={(checked) => setData('remember', checked === true)} />
                         <Label htmlFor="remember" className="text-xs font-normal">Ingat saya</Label>
                     </div>
-                    <Button type="submit" disabled={processing} className="bg-auth-action h-10 w-full rounded-lg font-semibold text-white">
+                    <HoverBorderGradient
+                        type="submit"
+                        containerClassName="h-10 w-full rounded-lg focus-visible:outline-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-60"
+                        className="bg-auth-action hover:bg-brand-primary h-full w-full rounded-lg font-semibold text-white transition-colors"
+                        disabled={processing}
+                    >
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                         {processing ? 'Memproses...' : adminMode ? 'Masuk Admin' : 'Masuk sebagai Pembeli'}
-                    </Button>
+                    </HoverBorderGradient>
                 </div>
                 {!adminMode ? (
                     <>
@@ -75,7 +89,6 @@ export default function Login({ status, roleError, canResetPassword, adminMode =
                     <div className="text-center text-sm text-black/55">Pembeli? <TextLink href={route('login')} className="text-brand-primary font-semibold">Login pembeli</TextLink></div>
                 )}
             </form>
-            {status && <div role="status" className="mt-4 text-center text-sm font-medium text-emerald-700">{status}</div>}
         </AuthEntryLayout>
     );
 }

@@ -15,10 +15,22 @@ class BuyerOrderController extends Controller
 {
     public function index(Request $request): Response
     {
+        $orders = Order::query()->where('buyer_id', $request->user()->id)
+            ->with([
+                'items:id,order_id,product_id,product_title,unit_price,google_sheet_id,delivery_url',
+                'items.product:id,usage_guide',
+            ])
+            ->latest()->paginate(15);
+
+        $orders->getCollection()->each(function (Order $order) {
+            $order->items->each(function (OrderItem $item) {
+                $item->setAttribute('guide_available', filled($item->product?->usage_guide));
+                $item->unsetRelation('product');
+            });
+        });
+
         return Inertia::render('marketplace/orders', [
-            'orders' => Order::query()->where('buyer_id', $request->user()->id)
-                ->with('items:id,order_id,product_id,product_title,unit_price')
-                ->latest()->paginate(15),
+            'orders' => $orders,
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -30,11 +42,13 @@ class BuyerOrderController extends Controller
         abort_unless($item->order_id === $order->id, 404);
 
         $product = $item->product;
-        abort_unless($product && Storage::disk('local')->exists($product->file_path), 404);
+        $filePath = $item->file_path ?: $product?->file_path;
+        $fileName = $item->file_name ?: $product?->original_filename;
+        abort_unless(is_string($filePath) && is_string($fileName) && Storage::disk('local')->exists($filePath), 404);
 
-        $product->increment('download_count');
-        $downloadName = preg_replace('/[^A-Za-z0-9._-]/', '-', $product->original_filename) ?: 'template.xlsx';
+        $product?->increment('download_count');
+        $downloadName = preg_replace('/[^A-Za-z0-9._-]/', '-', $fileName) ?: 'template.xlsx';
 
-        return Storage::disk('local')->download($product->file_path, $downloadName);
+        return Storage::disk('local')->download($filePath, $downloadName);
     }
 }

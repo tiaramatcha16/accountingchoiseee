@@ -29,13 +29,17 @@ class GoogleAuthController extends Controller
             return to_route('login')->with('google_error', 'Login Google belum dikonfigurasi. Tambahkan kredensial Google OAuth ke file .env.');
         }
 
-        if (request()->query('error') === 'access_denied') {
-            return to_route('login')->with('google_error', 'Login Google dibatalkan. Silakan coba lagi.');
+        if (request()->filled('error')) {
+            $message = request()->query('error') === 'access_denied'
+                ? 'Login Google dibatalkan. Silakan coba lagi.'
+                : 'Google tidak dapat menyelesaikan login. Silakan coba lagi.';
+
+            return to_route('login')->with('google_error', $message);
         }
 
         try {
             $googleUser = Socialite::driver('google')->user();
-        } catch (InvalidStateException|GuzzleException $exception) {
+        } catch (GuzzleException|InvalidStateException $exception) {
             Log::warning('Google OAuth callback failed.', ['exception' => $exception::class]);
             return to_route('login')->with('google_error', 'Login Google gagal atau kedaluwarsa. Silakan coba lagi.');
         }

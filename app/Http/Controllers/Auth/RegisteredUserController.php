@@ -42,8 +42,6 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // role is deliberately not accepted from request data. The database
-        // default assigns buyer; admin privileges are provisioned separately.
         $user = User::create($validated);
 
         event(new Registered($user));

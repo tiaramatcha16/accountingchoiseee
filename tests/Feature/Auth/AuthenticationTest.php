@@ -18,6 +18,18 @@ test('users can authenticate using the login screen and email casing is normaliz
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
+test('admins can log in through the admin login and reach the admin dashboard', function () {
+    $admin = User::factory()->admin()->create(['email' => 'admin@example.com']);
+
+    $response = $this->post('/admin/login', [
+        'email' => 'admin@example.com',
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($admin);
+    $response->assertRedirect(route('admin.dashboard', absolute: false));
+});
+
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 
