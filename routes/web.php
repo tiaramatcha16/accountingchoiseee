@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\SalesAnalyticsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Marketplace\BuyerDashboardController;
 use App\Http\Controllers\Marketplace\BuyerOrderController;
 use App\Http\Controllers\Marketplace\CartController;
 use App\Http\Controllers\Marketplace\CatalogController;
@@ -52,7 +51,7 @@ Route::middleware(['auth'])->group(function () {
             return to_route('admin.dashboard');
         }
 
-        return app(BuyerDashboardController::class)($request);
+        return to_route('home');
     })->name('dashboard');
 
     Route::get('/checkout', [MarketplaceOrderController::class, 'showCheckout'])->name('checkout.show');
@@ -103,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/products/{product}/status', [AdminProductController::class, 'updateStatus'])->name('products.status');
         Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->name('products.destroy');
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+        Route::post('/orders/{order}/mark-paid', [AdminOrderController::class, 'markPaid'])->name('orders.mark-paid');
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::patch('/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('users.role');
     });

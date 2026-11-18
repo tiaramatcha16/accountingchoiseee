@@ -4,12 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class OrderController extends Controller
 {
+    public function markPaid(Order $order): RedirectResponse
+    {
+        if ($order->status !== Order::STATUS_PAID) {
+            $order->update([
+                'status' => Order::STATUS_PAID,
+                'paid_at' => now(),
+            ]);
+        }
+
+        return back()->with('status', "Pesanan {$order->order_number} berhasil ditandai Lunas.");
+    }
+
     public function index(Request $request): Response
     {
         $orders = Order::query()

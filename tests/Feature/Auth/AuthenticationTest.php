@@ -15,7 +15,18 @@ test('users can authenticate using the login screen and email casing is normaliz
     ]);
 
     $this->assertAuthenticatedAs($user);
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('home', absolute: false));
+});
+
+test('buyers return to their intended checkout after login', function () {
+    $user = User::factory()->create();
+
+    $this->withSession(['url.intended' => '/checkout'])
+        ->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->assertRedirect('/checkout');
 });
 
 test('admins can log in through the admin login and reach the admin dashboard', function () {

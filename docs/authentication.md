@@ -4,7 +4,7 @@ The application stores user credentials in Laravel's `users` table. Public regis
 
 ## Default Roles & Access
 
-* **Buyer (`buyer`)**: Default role for all public registrations. Redirected to `/dashboard` upon login.
+* **Buyer (`buyer`)**: Default role for all public registrations. Redirected to the storefront (`/`) upon login.
 * **Admin (`admin`)**: Has access to `/admin` routes. Redirected directly to `/admin` (`admin.dashboard`) upon login.
 * **Seller (`seller`)**: Can manage and submit template products for review.
 

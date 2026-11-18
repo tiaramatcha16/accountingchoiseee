@@ -6,7 +6,7 @@ test('registration screen can be rendered', function () {
     $this->get('/register')->assertStatus(200);
 });
 
-test('new users are persisted as buyers and redirected to the dashboard', function () {
+test('new users are persisted as buyers and redirected to the storefront', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',
         'email' => 'TEST@example.com',
@@ -31,7 +31,7 @@ test('new users are persisted as buyers and redirected to the dashboard', functi
 
     $user = \App\Models\User::query()->where('email', 'test@example.com')->firstOrFail();
     expect(Hash::check('password', $user->password))->toBeTrue();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('home', absolute: false));
 });
 
 test('registration requires phone, institution, and city', function () {

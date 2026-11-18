@@ -142,6 +142,15 @@ export default function AdminOrders({
                                         {order.payment_reference && (
                                             <p className="mt-2 text-xs text-gray-500">ID transaksi: {order.payment_reference}</p>
                                         )}
+                                        {order.status === 'pending' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => router.post(`/admin/orders/${order.id}/mark-paid`)}
+                                                className="mt-2 block rounded-lg border border-emerald-600 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
+                                            >
+                                                Tandai Lunas
+                                            </button>
+                                        )}
                                         {order.status === 'pending' && order.payment_url && (
                                             <a
                                                 href={order.payment_url}

@@ -10,7 +10,7 @@ test('buyer login page renders buyer mode and buyer can sign in', function () {
 
     $this->get('/login')->assertOk()->assertInertia(fn ($page) => $page->component('auth/login')->where('adminMode', false));
     $this->post('/login', ['email' => $buyer->email, 'password' => 'password'])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('home', absolute: false));
 
     $this->assertAuthenticatedAs($buyer);
 });

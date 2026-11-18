@@ -12,7 +12,7 @@ php artisan users:make-admin owner@example.com
 
 No Google sign-in is enabled. Buyers and admins use email/password, and the admin account must be provisioned manually.
 
-- Buyers land on `/dashboard` for order/payment stats, recent purchases, featured templates, and links to catalog and orders.
+- Buyers land on the storefront (`/`) after login or registration. The storefront keeps the cart, checkout, and order history available; `/dashboard` redirects buyers back to the storefront.
 - Admins opening `/dashboard` are routed to `/admin`, with catalog moderation, order review, user roles, sales metrics, and navigation.
 - Sellers assigned by an admin can manage private uploads from `/seller/products`; new uploads remain drafts until reviewed.
 

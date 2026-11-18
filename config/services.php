@@ -23,7 +23,8 @@ return [
 
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'api_keys' => array_values(array_unique(array_filter([env('GEMINI_API_KEY'), ...array_map('trim', explode(',', (string) env('GEMINI_API_KEYS', '')))]))),
+        'model' => env('GEMINI_MODEL', 'gemini-flash-lite-latest'),
     ],
 
     'midtrans' => [
