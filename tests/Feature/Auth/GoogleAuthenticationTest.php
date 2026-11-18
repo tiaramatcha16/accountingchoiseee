@@ -19,7 +19,7 @@ test('public registration creates a buyer account without external authenticatio
         'city' => 'Jakarta',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertRedirect(route('dashboard', absolute: false));
+    ])->assertRedirect(route('home', absolute: false));
 
     $this->assertDatabaseHas('users', ['email' => 'buyer@example.com', 'role' => User::ROLE_BUYER]);
     $this->assertAuthenticated();

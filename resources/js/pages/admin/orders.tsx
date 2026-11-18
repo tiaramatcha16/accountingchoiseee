@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { FileSpreadsheet } from 'lucide-react';
 import { type FormEvent } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -13,6 +14,9 @@ interface Item {
     id: number;
     product_title: string;
     unit_price: number;
+    google_sheet_id?: string | null;
+    delivery_url?: string | null;
+    delivery_file_id?: string | null;
 }
 
 interface Order {
@@ -127,7 +131,20 @@ export default function AdminOrders({
                                     </td>
                                     <td className="p-4">
                                         {order.items.map((item) => (
-                                            <p key={item.id}>{item.product_title}</p>
+                                            <div key={item.id} className="mb-2 last:mb-0">
+                                                <p className="font-medium text-gray-900">{item.product_title}</p>
+                                                {item.delivery_url && (
+                                                    <a
+                                                        href={item.delivery_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline"
+                                                    >
+                                                        <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
+                                                        Buka Salinan Google Sheets
+                                                    </a>
+                                                )}
+                                            </div>
                                         ))}
                                     </td>
                                     <td className="p-4 font-semibold">{money(order.total_amount)}</td>
