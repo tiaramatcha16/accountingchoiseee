@@ -45,10 +45,10 @@ class GoogleDriveCopyService
             $item->forceFill(['delivery_file_id' => $fileId])->save();
         }
 
-        $this->ensureBuyerPermission($accessToken, $fileId, $buyerEmail);
-
         $deliveryUrl = 'https://docs.google.com/spreadsheets/d/'.$fileId.'/edit';
         $item->forceFill(['delivery_url' => $deliveryUrl])->save();
+
+        $this->ensureBuyerPermission($accessToken, $fileId, $buyerEmail);
 
         return $deliveryUrl;
     }
@@ -123,7 +123,42 @@ class GoogleDriveCopyService
             throw new GoogleDriveCopyException('Google Drive copy is not a Google Sheets spreadsheet.');
         }
 
+        $this->applySecurityRestrictions($accessToken, $fileId);
+
         return ['id' => $fileId];
+    }
+
+    public function applySecurityRestrictions(string $accessToken, string $fileId): void
+    {
+        try {
+            $this->driveRequest(
+                fn () => $this->drive($accessToken)->patch(
+                    self::DRIVE_API_URL.'/files/'.rawurlencode($fileId).'?supportsAllDrives=true',
+                    [
+                        'copyRequiresWriterPermission' => true,
+                        'writersCanShare' => false,
+                        'downloadRestrictions' => [
+                            'itemDownloadRestriction' => [
+                                'restrictedForReaders' => true,
+                                'restrictedForWriters' => true,
+                            ],
+                        ],
+                    ],
+                ),
+                'Could not apply security restrictions to the Google Sheets copy',
+            );
+        } catch (\Throwable $e) {
+            $this->driveRequest(
+                fn () => $this->drive($accessToken)->patch(
+                    self::DRIVE_API_URL.'/files/'.rawurlencode($fileId).'?supportsAllDrives=true',
+                    [
+                        'copyRequiresWriterPermission' => true,
+                        'writersCanShare' => false,
+                    ],
+                ),
+                'Could not apply security restrictions to the Google Sheets copy',
+            );
+        }
     }
 
     /**
@@ -157,6 +192,22 @@ class GoogleDriveCopyService
         );
 
         $permissions = is_array($data['permissions'] ?? null) ? $data['permissions'] : [];
+
+        foreach ($permissions as $perm) {
+            if (($perm['type'] ?? null) === 'anyone' && isset($perm['id'])) {
+                try {
+                    $this->driveRequest(
+                        fn () => $this->drive($accessToken)->delete(
+                            self::DRIVE_API_URL.'/files/'.rawurlencode($fileId).'/permissions/'.rawurlencode($perm['id']).'?supportsAllDrives=true'
+                        ),
+                        'Could not remove public link permission',
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Could not delete anyone permission on {$fileId}: ".$e->getMessage());
+                }
+            }
+        }
+
         $matchingPermission = collect($permissions)->first(
             fn ($permission) => ($permission['type'] ?? null) === 'user'
                 && mb_strtolower((string) ($permission['emailAddress'] ?? '')) === mb_strtolower($buyerEmail),
@@ -178,17 +229,35 @@ class GoogleDriveCopyService
             return;
         }
 
-        $this->driveRequest(
-            fn () => $this->drive($accessToken)->post(
-                self::DRIVE_API_URL.'/files/'.rawurlencode($fileId).'/permissions?sendNotificationEmail=false&supportsAllDrives=true&fields=id',
-                [
-                    'type' => 'user',
-                    'role' => 'writer',
-                    'emailAddress' => $buyerEmail,
-                ],
-            ),
-            'Could not share the Google Sheets copy with the buyer',
-        );
+        try {
+            $this->driveRequest(
+                fn () => $this->drive($accessToken)->post(
+                    self::DRIVE_API_URL.'/files/'.rawurlencode($fileId).'/permissions?sendNotificationEmail=false&supportsAllDrives=true&fields=id',
+                    [
+                        'type' => 'user',
+                        'role' => 'writer',
+                        'emailAddress' => $buyerEmail,
+                    ],
+                ),
+                'Could not share the Google Sheets copy with the buyer',
+            );
+        } catch (GoogleDriveCopyException $exception) {
+            if (str_contains($exception->getMessage(), 'Notify people') || str_contains($exception->getMessage(), 'sendNotificationEmail')) {
+                $this->driveRequest(
+                    fn () => $this->drive($accessToken)->post(
+                        self::DRIVE_API_URL.'/files/'.rawurlencode($fileId).'/permissions?sendNotificationEmail=true&supportsAllDrives=true&fields=id',
+                        [
+                            'type' => 'user',
+                            'role' => 'writer',
+                            'emailAddress' => $buyerEmail,
+                        ],
+                    ),
+                    'Could not share the Google Sheets copy with the buyer via invitation',
+                );
+            } else {
+                throw $exception;
+            }
+        }
     }
 
     private function drive(string $accessToken): PendingRequest
@@ -210,7 +279,8 @@ class GoogleDriveCopyService
 
         $data = $response->json();
         if (! $response->successful() || ! is_array($data)) {
-            throw new GoogleDriveCopyException($errorMessage.' (HTTP '.$response->status().').');
+            $details = $data['error']['message'] ?? $response->body();
+            throw new GoogleDriveCopyException($errorMessage.' (HTTP '.$response->status().'): '.$details);
         }
 
         return $data;

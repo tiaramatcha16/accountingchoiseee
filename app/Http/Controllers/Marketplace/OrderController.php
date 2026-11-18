@@ -46,6 +46,7 @@ class OrderController extends Controller
             ],
             'offlineCheckout' => ! $midtrans->isConfigured()
                 && config('services.midtrans.offline_checkout_enabled'),
+            'directSuccess' => (bool) config('services.midtrans.direct_success', false),
         ]);
     }
 
@@ -84,10 +85,11 @@ class OrderController extends Controller
             ]);
         }
 
-        $usesMidtrans = $midtrans->isConfigured();
+        $directSuccess = (bool) config('services.midtrans.direct_success', false);
+        $usesMidtrans = ! $directSuccess && $midtrans->isConfigured();
 
         if (
-            $usesMidtrans
+            ($usesMidtrans || $directSuccess)
             && $products->contains(fn (Product $product) => filled($product->google_sheet_id))
             && ! $googleDrive->isConfigured()
         ) {
@@ -113,7 +115,7 @@ class OrderController extends Controller
             }
         }
 
-        if (! $usesMidtrans && ! config('services.midtrans.offline_checkout_enabled')) {
+        if (! $usesMidtrans && ! $directSuccess && ! config('services.midtrans.offline_checkout_enabled')) {
             throw ValidationException::withMessages([
                 'payment' => 'Pembayaran QRIS belum dikonfigurasi. Silakan coba kembali nanti.',
             ]);
@@ -152,7 +154,7 @@ class OrderController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $products, $validated, $totalAmount, $orderNumber, $payment) {
+        $order = DB::transaction(function () use ($request, $products, $validated, $totalAmount, $orderNumber, $payment, $directSuccess) {
             $order = Order::query()->create([
                 'order_number' => $orderNumber,
                 'buyer_id' => $request->user()->id,
@@ -160,8 +162,9 @@ class OrderController extends Controller
                 'customer_phone' => $validated['customer_phone'],
                 'customer_email' => mb_strtolower($validated['customer_email']),
                 'total_amount' => $totalAmount,
-                'status' => Order::STATUS_PENDING,
-                'payment_gateway' => $payment === null ? 'offline' : 'midtrans',
+                'status' => $directSuccess ? Order::STATUS_PAID : Order::STATUS_PENDING,
+                'paid_at' => $directSuccess ? now() : null,
+                'payment_gateway' => $directSuccess ? 'direct_test' : ($payment === null ? 'offline' : 'midtrans'),
                 'payment_url' => $payment['redirect_url'] ?? null,
             ]);
 
@@ -180,7 +183,25 @@ class OrderController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->whereIn('product_id', $products->modelKeys())
                 ->delete();
+
+            return $order;
         });
+
+        if ($directSuccess) {
+            $order->loadMissing('items');
+            foreach ($order->items->whereNotNull('google_sheet_id') as $item) {
+                try {
+                    $googleDrive->createBuyerCopy($item, $validated['customer_email'], $orderNumber);
+                } catch (GoogleDriveCopyException $exception) {
+                    Log::error("Direct checkout Google Sheets copy failed: ".$exception->getMessage());
+                }
+            }
+
+            return to_route('orders.index')->with(
+                'status',
+                'Pembayaran berhasil disimulasikan! Salinan Google Sheets Anda telah dibuat dan siap dibuka.',
+            );
+        }
 
         if ($payment !== null) {
             return Inertia::location($payment['redirect_url']);

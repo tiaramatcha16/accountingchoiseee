@@ -15,6 +15,7 @@ interface CheckoutProps {
     items: CheckoutItem[];
     total: number;
     offlineCheckout: boolean;
+    directSuccess?: boolean;
     customer: {
         name: string;
         phone: string | null;
@@ -29,7 +30,7 @@ const formatRupiah = (amount: number) =>
         maximumFractionDigits: 0,
     }).format(amount);
 
-export default function CheckoutPage({ items, total, offlineCheckout, customer }: CheckoutProps) {
+export default function CheckoutPage({ items, total, offlineCheckout, directSuccess, customer }: CheckoutProps) {
     const form = useForm({
         customer_name: customer.name ?? '',
         customer_phone: customer.phone ?? '',
@@ -56,13 +57,15 @@ export default function CheckoutPage({ items, total, offlineCheckout, customer }
                     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
                         <div className="mb-7">
                             <span className="text-brand-primary text-xs font-bold tracking-widest uppercase">
-                                {offlineCheckout ? 'Mode uji coba' : 'Satu langkah lagi'}
+                                {directSuccess ? 'Mode Uji Coba Langsung Sukses' : offlineCheckout ? 'Mode uji coba' : 'Satu langkah lagi'}
                             </span>
                             <h1 className="font-heading mt-2 text-2xl font-extrabold text-slate-900 sm:text-3xl">Data penerima template</h1>
                             <p className="mt-2 text-sm leading-6 text-slate-600">
-                                {offlineCheckout
-                                    ? 'Isi data untuk menyimpan pesanan uji coba. Belum ada pembayaran atau pengiriman file.'
-                                    : 'Isi data yang benar. Akses salinan spreadsheet akan dikirim ke email dan tersedia di Pesanan Saya setelah pembayaran berhasil.'}
+                                {directSuccess
+                                    ? 'Isi data penerima. Pembayaran langsung otomatis diverifikasi sukses dan Google Drive API langsung membuat salinan file spreadsheet khusus untuk email Anda.'
+                                    : offlineCheckout
+                                      ? 'Isi data untuk menyimpan pesanan uji coba. Belum ada pembayaran atau pengiriman file.'
+                                      : 'Isi data yang benar. Akses salinan spreadsheet akan dikirim ke email dan tersedia di Pesanan Saya setelah pembayaran berhasil.'}
                             </p>
                         </div>
 
@@ -148,12 +151,18 @@ export default function CheckoutPage({ items, total, offlineCheckout, customer }
                                     <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
                                     <div>
                                         <p className="text-sm font-bold text-emerald-900">
-                                            {offlineCheckout ? 'Pesanan uji coba tanpa pembayaran' : 'Pembayaran QRIS melalui Midtrans'}
+                                            {directSuccess
+                                                ? 'Simulasi Pembayaran Langsung Sukses'
+                                                : offlineCheckout
+                                                  ? 'Pesanan uji coba tanpa pembayaran'
+                                                  : 'Pembayaran QRIS melalui Midtrans'}
                                         </p>
                                         <p className="mt-1 text-xs leading-5 text-emerald-800">
-                                            {offlineCheckout
-                                                ? 'Pesanan akan tersimpan dengan status menunggu pembayaran. Tidak ada pembayaran yang diproses.'
-                                                : 'Kamu akan diarahkan ke halaman pembayaran aman Midtrans. Status pesanan diperbarui otomatis setelah pembayaran terkonfirmasi.'}
+                                            {directSuccess
+                                                ? 'Pembayaran akan langsung diverifikasi lunas. Google Drive API akan otomatis menduplikasi spreadsheet baru khusus untuk email Anda.'
+                                                : offlineCheckout
+                                                  ? 'Pesanan akan tersimpan dengan status menunggu pembayaran. Tidak ada pembayaran yang diproses.'
+                                                  : 'Kamu akan diarahkan ke halaman pembayaran aman Midtrans. Status pesanan diperbarui otomatis setelah pembayaran terkonfirmasi.'}
                                         </p>
                                     </div>
                                 </div>
@@ -165,12 +174,12 @@ export default function CheckoutPage({ items, total, offlineCheckout, customer }
                                 className="bg-brand-primary hover:bg-brand-primary-dark flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {form.processing
-                                    ? offlineCheckout
-                                        ? 'Menyimpan pesanan...'
-                                        : 'Menyiapkan pembayaran...'
-                                    : offlineCheckout
-                                      ? 'Simpan pesanan uji coba'
-                                      : 'Lanjutkan ke pembayaran QRIS'}
+                                    ? 'Memproses pesanan & duplikasi file...'
+                                    : directSuccess
+                                      ? 'Selesaikan & Buat Salinan Google Sheets'
+                                      : offlineCheckout
+                                        ? 'Simpan pesanan uji coba'
+                                        : 'Lanjutkan ke pembayaran QRIS'}
                                 {!form.processing && <ArrowRight className="h-4 w-4" />}
                             </button>
                         </form>

@@ -147,6 +147,10 @@ test('verified payment creates one Google Sheets copy and shares it with the buy
             ]);
         }
 
+        if ($path === '/drive/v3/files/copied-sheet-id' && $request->method() === 'PATCH') {
+            return Http::response(['id' => 'copied-sheet-id'], 200);
+        }
+
         if ($path === '/drive/v3/files/copied-sheet-id/permissions' && $request->method() === 'GET') {
             return Http::response(['permissions' => []]);
         }
@@ -219,9 +223,112 @@ test('verified payment creates one Google Sheets copy and shares it with the buy
 
     $this->postJson('/payments/midtrans/notification', $payload)->assertOk();
     Mail::assertSentCount(1);
-    Http::assertSentCount(8);
+    Http::assertSentCount(9);
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), '/files/copied-sheet-id')
+        && $request->method() === 'PATCH'
+        && $request['copyRequiresWriterPermission'] === true
+        && $request['writersCanShare'] === false);
     Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), '/permissions')
         && $request->method() === 'POST'
         && $request['role'] === 'writer'
         && $request['emailAddress'] === 'buyer@example.com');
+});
+
+test('direct success checkout mode immediately marks order paid and creates Google Sheets copy for buyer', function () {
+    Cache::forget('google-drive-access-token');
+    config([
+        'services.midtrans.direct_success' => true,
+        'services.google_drive.client_id' => 'test-client-id',
+        'services.google_drive.client_secret' => 'test-client-secret',
+        'services.google_drive.refresh_token' => 'test-refresh-token',
+        'services.google_drive.folder_id' => 'folder-test-id',
+    ]);
+
+    $copyUrl = 'https://docs.google.com/spreadsheets/d/direct-copy-sheet-id/edit';
+
+    Http::fake(function (HttpRequest $request) use ($copyUrl) {
+        $path = parse_url($request->url(), PHP_URL_PATH);
+
+        if ($path === '/token') {
+            return Http::response(['access_token' => 'test-google-access-token', 'expires_in' => 3600]);
+        }
+
+        if ($path === '/drive/v3/files' && $request->method() === 'GET') {
+            return Http::response(['files' => []]);
+        }
+
+        if ($path === '/drive/v3/files/master-sheet-123' && $request->method() === 'GET') {
+            return Http::response([
+                'id' => 'master-sheet-123',
+                'mimeType' => 'application/vnd.google-apps.spreadsheet',
+            ]);
+        }
+
+        if ($path === '/drive/v3/files/master-sheet-123/copy' && $request->method() === 'POST') {
+            return Http::response([
+                'id' => 'direct-copy-sheet-id',
+                'mimeType' => 'application/vnd.google-apps.spreadsheet',
+                'webViewLink' => $copyUrl,
+            ]);
+        }
+
+        if ($path === '/drive/v3/files/direct-copy-sheet-id' && $request->method() === 'PATCH') {
+            return Http::response(['id' => 'direct-copy-sheet-id'], 200);
+        }
+
+        if ($path === '/drive/v3/files/direct-copy-sheet-id/permissions' && $request->method() === 'GET') {
+            return Http::response(['permissions' => []]);
+        }
+
+        if ($path === '/drive/v3/files/direct-copy-sheet-id/permissions' && $request->method() === 'POST') {
+            return Http::response(['id' => 'buyer-permission-id'], 200);
+        }
+
+        return Http::response(['error' => 'Unexpected Google request.'], 500);
+    });
+
+    $buyer = User::factory()->create(['email' => 'directbuyer@example.com']);
+    $seller = User::factory()->create();
+    $product = Product::create([
+        'created_by' => $seller->id,
+        'title' => 'Template Kas Masuk & Keluar',
+        'slug' => 'template-kas-direct',
+        'category' => 'Keuangan',
+        'description' => 'Template kas otomatis',
+        'price' => 35000,
+        'google_sheet_id' => 'master-sheet-123',
+        'status' => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->actingAs($buyer)->post('/cart', ['product_id' => $product->id])->assertRedirect();
+    $this->post('/checkout', [
+        'customer_name' => 'Direct Buyer',
+        'customer_phone' => '081298765432',
+        'customer_email' => 'directbuyer@example.com',
+    ])->assertRedirect('/my-orders');
+
+    $order = Order::query()->where('buyer_id', $buyer->id)->firstOrFail();
+    expect($order->status)->toBe(Order::STATUS_PAID)
+        ->and($order->paid_at)->not->toBeNull()
+        ->and($order->payment_gateway)->toBe('direct_test');
+
+    $item = $order->items()->firstOrFail();
+    expect($item->delivery_file_id)->toBe('direct-copy-sheet-id')
+        ->and($item->delivery_url)->toBe($copyUrl);
+
+    $this->get('/my-orders')->assertInertia(fn ($page) => $page
+        ->component('marketplace/orders')
+        ->where('orders.data.0.status', Order::STATUS_PAID)
+        ->where('orders.data.0.items.0.delivery_type', 'google_sheets')
+        ->where('orders.data.0.items.0.delivery_url', $copyUrl));
+
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), '/copy')
+        && $request['parents'] === ['folder-test-id']
+        && $request['appProperties']['accountingchoice_order_item_id'] === (string) $item->id);
+
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), '/permissions')
+        && $request->method() === 'POST'
+        && $request['role'] === 'writer'
+        && $request['emailAddress'] === 'directbuyer@example.com');
 });

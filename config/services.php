@@ -31,6 +31,7 @@ return [
         'server_key' => env('MIDTRANS_SERVER_KEY'),
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
         'offline_checkout_enabled' => env('CHECKOUT_OFFLINE_MODE', env('APP_ENV') === 'local'),
+        'direct_success' => (bool) env('CHECKOUT_DIRECT_SUCCESS', false),
     ],
 
 ];

@@ -126,7 +126,7 @@ export default function BuyerOrders({ orders, status }: { orders: Paginated<Orde
                                         {order.status === 'paid' ? (
                                             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                                                 <ShieldCheck className="h-3.5 w-3.5" />
-                                                Lunas & Siap Diunduh
+                                                Lunas & Akses Siap
                                             </span>
                                         ) : order.status === 'pending' ? (
                                             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
@@ -245,9 +245,8 @@ export default function BuyerOrders({ orders, status }: { orders: Paginated<Orde
                                     {order.status === 'paid' && (
                                         <p className="mt-3 text-xs leading-5 text-emerald-800">
                                             {order.delivery_email_sent_at && order.customer_email
-                                                ? `Informasi akses pesanan sudah dikirim ke ${order.customer_email}.`
-                                                : 'Pembayaran berhasil. File dapat diunduh melalui tombol di atas.'}{' '}
-                                            Periksa juga folder spam pada email.
+                                                ? `Informasi tautan akses pesanan sudah dikirim ke ${order.customer_email}.`
+                                                : 'Pembayaran berhasil. Tautan salinan Google Sheets unik Anda dapat langsung dibuka melalui tombol di atas.'}
                                         </p>
                                     )}
                                 </div>

@@ -13,16 +13,29 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BuyerOrderController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, \App\Services\GoogleDriveCopyService $googleDrive): Response
     {
         $orders = Order::query()->where('buyer_id', $request->user()->id)
             ->with([
-                'items:id,order_id,product_id,product_title,unit_price,google_sheet_id,delivery_url',
+                'items:id,order_id,product_id,product_title,unit_price,google_sheet_id,delivery_file_id,delivery_url',
                 'items.product:id,usage_guide',
             ])
             ->latest()->paginate(15);
 
-        $orders->getCollection()->each(function (Order $order) {
+        $orders->getCollection()->each(function (Order $order) use ($googleDrive) {
+            if ($order->status === Order::STATUS_PAID && $googleDrive->isConfigured()) {
+                foreach ($order->items as $item) {
+                    if (filled($item->google_sheet_id) && blank($item->delivery_url)) {
+                        try {
+                            $googleDrive->createBuyerCopy($item, $order->customer_email, $order->order_number);
+                            $item->refresh();
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning("Lazy Google Sheets copy creation failed for item {$item->id}: {$e->getMessage()}");
+                        }
+                    }
+                }
+            }
+
             $order->items->each(function (OrderItem $item) {
                 $item->setAttribute('guide_available', filled($item->product?->usage_guide));
                 $item->unsetRelation('product');
