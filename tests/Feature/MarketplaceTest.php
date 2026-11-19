@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\OrderPaidDeliveryMail;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
@@ -201,6 +202,159 @@ test('buyer can checkout multiple products from cart', function () {
         ->component('admin/orders')
         ->where('orders.data.0.order_number', $order->order_number)
         ->where('orders.data.0.buyer.email', $buyer->email));
+});
+
+test('Midtrans item details include cart quantities and match the order total', function () {
+    Storage::fake('local');
+    config([
+        'services.midtrans.server_key' => 'test-server-key',
+        'services.midtrans.is_production' => false,
+        'services.midtrans.direct_success' => false,
+        'mail.default' => 'smtp',
+    ]);
+
+    $paymentUrl = 'https://app.sandbox.midtrans.com/snap/v2/vtweb/test-token';
+    Http::fake([
+        'https://app.sandbox.midtrans.com/snap/v1/transactions' => Http::response([
+            'token' => 'test-token',
+            'redirect_url' => $paymentUrl,
+        ], 201),
+    ]);
+
+    $buyer = User::factory()->create();
+    $seller = User::factory()->create();
+    $product = Product::create([
+        'created_by' => $seller->id,
+        'title' => 'Workbook',
+        'slug' => 'quantity-workbook',
+        'category' => 'Bisnis',
+        'description' => 'Workbook for quantity checkout testing.',
+        'price' => 12000,
+        'file_path' => 'excel-templates/quantity-workbook.xlsx',
+        'original_filename' => 'quantity-workbook.xlsx',
+        'status' => 'published',
+        'published_at' => now(),
+    ]);
+    Storage::disk('local')->put($product->file_path, 'workbook');
+
+    $this->actingAs($buyer)
+        ->post('/cart', ['product_id' => $product->id, 'quantity' => 3])
+        ->assertRedirect();
+
+    $this->post('/checkout', [
+        'customer_name' => 'Nama Pembeli',
+        'customer_phone' => '081234567890',
+        'customer_email' => 'pembeli@example.com',
+    ])->assertRedirect($paymentUrl);
+
+    Http::assertSent(fn (HttpRequest $request) => $request['transaction_details']['gross_amount'] === 36000
+        && $request['item_details'] === [[
+            'id' => (string) $product->id,
+            'price' => 12000,
+            'quantity' => 3,
+            'name' => 'Workbook',
+        ]]);
+    $this->assertDatabaseCount('order_items', 3);
+});
+
+test('adding to cart cannot exceed the maximum total quantity per product', function () {
+    $buyer = User::factory()->create();
+    $seller = User::factory()->create();
+    $product = Product::create([
+        'created_by' => $seller->id,
+        'title' => 'Workbook',
+        'slug' => 'quantity-limit-workbook',
+        'category' => 'Bisnis',
+        'description' => 'Workbook for quantity limit testing.',
+        'price' => 12000,
+        'file_path' => 'excel-templates/quantity-limit-workbook.xlsx',
+        'original_filename' => 'quantity-limit-workbook.xlsx',
+        'status' => 'published',
+        'published_at' => now(),
+    ]);
+    CartItem::create([
+        'user_id' => $buyer->id,
+        'product_id' => $product->id,
+        'quantity' => CartItem::MAX_QUANTITY - 1,
+    ]);
+
+    $this->actingAs($buyer)
+        ->post('/cart', ['product_id' => $product->id, 'quantity' => 2])
+        ->assertSessionHasErrors('quantity');
+
+    $this->post("/templates/{$product->id}/orders", ['quantity' => 2])
+        ->assertSessionHasErrors('quantity');
+
+    $this->assertDatabaseHas('cart_items', [
+        'user_id' => $buyer->id,
+        'product_id' => $product->id,
+        'quantity' => CartItem::MAX_QUANTITY - 1,
+    ]);
+});
+
+test('checkout rejects cart quantities above the maximum', function () {
+    $buyer = User::factory()->create();
+    $seller = User::factory()->create();
+    $product = Product::create([
+        'created_by' => $seller->id,
+        'title' => 'Workbook',
+        'slug' => 'legacy-quantity-workbook',
+        'category' => 'Bisnis',
+        'description' => 'Workbook for legacy quantity testing.',
+        'price' => 12000,
+        'file_path' => 'excel-templates/legacy-quantity-workbook.xlsx',
+        'original_filename' => 'legacy-quantity-workbook.xlsx',
+        'status' => 'published',
+        'published_at' => now(),
+    ]);
+    CartItem::create([
+        'user_id' => $buyer->id,
+        'product_id' => $product->id,
+        'quantity' => CartItem::MAX_QUANTITY + 1,
+    ]);
+
+    $this->actingAs($buyer)
+        ->get('/checkout')
+        ->assertSessionHasErrors('quantity');
+});
+
+test('checkout rejects invalid recipient emails before creating an order', function () {
+    Storage::fake('local');
+    $buyer = User::factory()->create();
+    $seller = User::factory()->create();
+    $product = Product::create([
+        'created_by' => $seller->id,
+        'title' => 'Workbook',
+        'slug' => 'invalid-recipient-email-workbook',
+        'category' => 'Bisnis',
+        'description' => 'Workbook for recipient email validation testing.',
+        'price' => 12000,
+        'file_path' => 'excel-templates/invalid-recipient-email-workbook.xlsx',
+        'original_filename' => 'invalid-recipient-email-workbook.xlsx',
+        'status' => 'published',
+        'published_at' => now(),
+    ]);
+    Storage::disk('local')->put($product->file_path, 'workbook');
+
+    $this->actingAs($buyer)
+        ->post('/cart', ['product_id' => $product->id])
+        ->assertRedirect();
+
+    $this->post('/checkout', [
+        'customer_name' => 'Nama Pembeli',
+        'customer_phone' => '081234567890',
+        'customer_email' => 'pembeli@example.com',
+        'item_emails' => [
+            $product->id => [1 => 'bukan-email'],
+        ],
+    ])->assertSessionHasErrors("item_emails.{$product->id}.1");
+
+    $this->assertDatabaseCount('orders', 0);
+    $this->assertDatabaseHas('cart_items', [
+        'user_id' => $buyer->id,
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ]);
 });
 
 test('paid buyer keeps access to the purchased file after admin replaces the product file', function () {

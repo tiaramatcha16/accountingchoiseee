@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\CartService;
 use App\Services\GoogleDriveCopyService;
 use App\Services\MidtransSnapService;
 use Illuminate\Database\Eloquent\Collection;
@@ -75,12 +76,24 @@ class OrderController extends Controller
         MidtransSnapService $midtrans,
         GoogleDriveCopyService $googleDrive,
     ): RedirectResponse|\Symfony\Component\HttpFoundation\Response {
+        $itemEmails = $request->input('item_emails');
+        if (is_array($itemEmails)) {
+            foreach ($itemEmails as $productId => $emails) {
+                if (is_string($emails)) {
+                    $itemEmails[$productId] = [0 => $emails];
+                }
+            }
+
+            $request->merge(['item_emails' => $itemEmails]);
+        }
+
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:150'],
             'customer_phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+\s()\-]{8,30}$/'],
             'customer_email' => ['required', 'email', 'max:255'],
             'item_emails' => ['nullable', 'array'],
-            'item_emails.*' => ['nullable'],
+            'item_emails.*' => ['nullable', 'array'],
+            'item_emails.*.*' => ['nullable', 'email', 'max:255'],
         ]);
 
         $cartItems = $this->cartItemsWithProducts($request);
@@ -165,7 +178,7 @@ class OrderController extends Controller
                 $payment = $midtrans->createTransaction(
                     $orderNumber,
                     $totalAmount,
-                    $products,
+                    $cartItems,
                     [
                         'name' => $validated['customer_name'],
                         'phone' => $validated['customer_phone'],
@@ -207,13 +220,7 @@ class OrderController extends Controller
 
                 for ($i = 1; $i <= $quantity; $i++) {
                     $rawEmail = $validated['item_emails'][$product->id] ?? null;
-                    $itemEmail = null;
-
-                    if (is_array($rawEmail)) {
-                        $itemEmail = $rawEmail[$i] ?? ($rawEmail[0] ?? null);
-                    } elseif (is_string($rawEmail)) {
-                        $itemEmail = $rawEmail;
-                    }
+                    $itemEmail = is_array($rawEmail) ? ($rawEmail[$i] ?? ($rawEmail[0] ?? null)) : null;
 
                     $resolvedEmail = filled($itemEmail)
                         ? mb_strtolower(trim($itemEmail))
@@ -266,23 +273,19 @@ class OrderController extends Controller
         );
     }
 
-    public function store(Request $request, Product $product): RedirectResponse
+    public function store(Request $request, Product $product, CartService $cart): RedirectResponse
     {
         abort_unless($product->status === Product::STATUS_PUBLISHED, 404);
 
         $validated = $request->validate([
-            'quantity' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:'.CartItem::MAX_QUANTITY],
         ]);
 
-        $addQuantity = (int) ($validated['quantity'] ?? 1);
-
-        $cartItem = CartItem::firstOrNew([
-            'user_id' => $request->user()->id,
-            'product_id' => $product->id,
-        ]);
-
-        $cartItem->quantity = ($cartItem->exists ? (int) $cartItem->quantity : 0) + $addQuantity;
-        $cartItem->save();
+        $cart->add(
+            (int) $request->user()->id,
+            $product,
+            (int) ($validated['quantity'] ?? 1),
+        );
 
         return to_route('checkout.show');
     }
@@ -292,10 +295,20 @@ class OrderController extends Controller
      */
     private function cartItemsWithProducts(Request $request): Collection
     {
-        return $request->user()->cartItems()
+        $cartItems = $request->user()->cartItems()
             ->with('product')
             ->get()
             ->filter(fn ($item) => $item->product !== null && $item->product->status === Product::STATUS_PUBLISHED)
             ->values();
+
+        if ($cartItems->contains(
+            fn (CartItem $cartItem) => $cartItem->quantity < 1 || $cartItem->quantity > CartItem::MAX_QUANTITY,
+        )) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Jumlah template di keranjang harus antara 1 dan '.CartItem::MAX_QUANTITY.' unit.',
+            ]);
+        }
+
+        return $cartItems;
     }
 }

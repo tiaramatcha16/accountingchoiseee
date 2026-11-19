@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CartItem extends Model
 {
+    public const MAX_QUANTITY = 50;
+
     protected $fillable = [
         'user_id',
         'product_id',

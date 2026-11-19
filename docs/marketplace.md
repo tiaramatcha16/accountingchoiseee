@@ -2,7 +2,11 @@
 
 ## Setup
 
-After pulling branch `dev`, run `php artisan migrate` and start the Laravel/Vite development servers. Public registration creates buyer accounts only. The buyer login is `/login`; the owner/admin login is `/admin/login`.
+After pulling branch `dev`, run `php artisan migrate` and start the Laravel/Vite development servers. Public registration creates buyer accounts only. Buyers and admins use the shared `/login` page; successful admin login redirects to `/admin`. The legacy `/admin/login` URL redirects to `/login`.
+
+## Database persistence
+
+The default SQLite connection is for local development. In production, configure a persistent MySQL or PostgreSQL database. The application refuses to start with SQLite in production unless `DB_ALLOW_SQLITE_IN_PRODUCTION=true` is explicitly set. Only enable that option when the SQLite file is stored on a persistent mounted volume; otherwise accounts and orders may disappear after a deployment or restart.
 
 Promote the owner's already-registered account to admin from the project terminal:
 
@@ -30,7 +34,7 @@ Buyers browse `/templates`, create an order, and track it at `/my-orders`. Files
 
 ## Owner/admin workflow
 
-The owner logs in at `/admin/login`, then manages Excel products at `/admin/products`, order verification at `/admin/orders`, and user accounts at `/admin/users`. New uploads are drafts until reviewed and published.
+The owner logs in at `/login` and is redirected to `/admin`, then manages Excel products at `/admin/products`, order verification at `/admin/orders`, and user accounts at `/admin/users`. New uploads are drafts until reviewed and published.
 An admin can assign the seller role from `/admin/users`. Seller uploads are stored privately and only admin moderation can publish them.
 
 ## Payment limitation

@@ -18,6 +18,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'allow_sqlite_in_production' => env('DB_ALLOW_SQLITE_IN_PRODUCTION', false),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

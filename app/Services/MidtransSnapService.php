@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\MidtransPaymentException;
-use App\Models\Product;
+use App\Models\CartItem;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -16,11 +16,11 @@ class MidtransSnapService
     }
 
     /**
-     * @param  Collection<int, Product>  $products
+     * @param  Collection<int, CartItem>  $cartItems
      * @param  array{name: string, phone: string, email: string}  $customer
      * @return array{token: string, redirect_url: string}
      */
-    public function createTransaction(string $orderNumber, int $amount, Collection $products, array $customer): array
+    public function createTransaction(string $orderNumber, int $amount, Collection $cartItems, array $customer): array
     {
         $serverKey = config('services.midtrans.server_key');
         if (! is_string($serverKey) || $serverKey === '') {
@@ -43,11 +43,11 @@ class MidtransSnapService
                 'gross_amount' => $amount,
             ],
             'enabled_payments' => ['gopay'],
-            'item_details' => $products->map(fn ($product) => [
-                'id' => (string) ($product->id ?? $product['id'] ?? 'item'),
-                'price' => (int) ($product->price ?? $product['price'] ?? 0),
-                'quantity' => (int) ($product->quantity ?? $product['quantity'] ?? 1),
-                'name' => mb_substr($product->title ?? $product['name'] ?? 'Template', 0, 50),
+            'item_details' => $cartItems->map(fn (CartItem $cartItem) => [
+                'id' => (string) $cartItem->product_id,
+                'price' => (int) $cartItem->product->price,
+                'quantity' => (int) $cartItem->quantity,
+                'name' => mb_substr($cartItem->product->title, 0, 50),
             ])->all(),
             'customer_details' => [
                 'first_name' => $customer['name'],
