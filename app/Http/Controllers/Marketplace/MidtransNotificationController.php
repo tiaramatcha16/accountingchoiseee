@@ -90,12 +90,13 @@ class MidtransNotificationController
             $order->loadMissing('items');
 
             foreach ($order->items->whereNotNull('google_sheet_id') as $item) {
-                if (! is_string($order->customer_email) || $order->customer_email === '') {
+                $targetEmail = $item->recipient_email ?: $order->customer_email;
+                if (! is_string($targetEmail) || $targetEmail === '') {
                     return response()->json(['message' => 'Buyer email is required to share the purchased spreadsheet.'], 422);
                 }
 
                 try {
-                    $googleDrive->createBuyerCopy($item, $order->customer_email, $order->order_number);
+                    $googleDrive->createBuyerCopy($item, $targetEmail, $order->order_number);
                 } catch (GoogleDriveCopyException $exception) {
                     Log::error('Paid Google Sheets order could not be copied or shared.', [
                         'order_number' => $order->order_number,

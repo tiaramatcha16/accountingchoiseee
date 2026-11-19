@@ -25,20 +25,40 @@ class OrderController extends Controller
 {
     public function showCheckout(Request $request, MidtransSnapService $midtrans): Response|RedirectResponse
     {
-        $products = $this->cartProducts($request);
+        $cartItems = $this->cartItemsWithProducts($request);
 
-        if ($products->isEmpty()) {
+        if ($cartItems->isEmpty()) {
             return to_route('catalog.index')->withErrors(['cart' => 'Keranjang belum berisi template yang tersedia.']);
         }
 
+        $checkoutItems = [];
+        $total = 0;
+
+        foreach ($cartItems as $cartItem) {
+            $product = $cartItem->product;
+            if (! $product) {
+                continue;
+            }
+            $quantity = max(1, (int) $cartItem->quantity);
+            $total += (int) $product->price * $quantity;
+
+            for ($i = 1; $i <= $quantity; $i++) {
+                $checkoutItems[] = [
+                    'cart_key' => "{$product->id}_{$i}",
+                    'id' => $product->id,
+                    'unit_number' => $i,
+                    'total_units' => $quantity,
+                    'title' => $product->title,
+                    'category' => $product->category,
+                    'price' => (int) $product->price,
+                    'is_google_sheet' => filled($product->google_sheet_id),
+                ];
+            }
+        }
+
         return Inertia::render('marketplace/checkout', [
-            'items' => $products->map(fn (Product $product) => [
-                'id' => $product->id,
-                'title' => $product->title,
-                'category' => $product->category,
-                'price' => $product->price,
-            ]),
-            'total' => $products->sum('price'),
+            'items' => $checkoutItems,
+            'total' => $total,
             'customer' => [
                 'name' => $request->user()->name,
                 'phone' => $request->user()->phone,
@@ -59,15 +79,19 @@ class OrderController extends Controller
             'customer_name' => ['required', 'string', 'max:150'],
             'customer_phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+\s()\-]{8,30}$/'],
             'customer_email' => ['required', 'email', 'max:255'],
+            'item_emails' => ['nullable', 'array'],
+            'item_emails.*' => ['nullable'],
         ]);
 
-        $products = $this->cartProducts($request);
+        $cartItems = $this->cartItemsWithProducts($request);
 
-        if ($products->isEmpty()) {
+        if ($cartItems->isEmpty()) {
             throw ValidationException::withMessages([
                 'payment' => 'Keranjang kosong atau template yang dipilih sudah tidak tersedia.',
             ]);
         }
+
+        $products = $cartItems->map->product->filter();
 
         foreach ($products as $product) {
             if ($product->google_sheet_id === null
@@ -78,7 +102,13 @@ class OrderController extends Controller
             }
         }
 
-        $totalAmount = (int) $products->sum('price');
+        $totalAmount = 0;
+        foreach ($cartItems as $cartItem) {
+            if ($cartItem->product) {
+                $totalAmount += (int) $cartItem->product->price * max(1, (int) $cartItem->quantity);
+            }
+        }
+
         if ($totalAmount < 1) {
             throw ValidationException::withMessages([
                 'payment' => 'Total pembayaran harus lebih dari Rp 0 untuk checkout QRIS.',
@@ -154,7 +184,7 @@ class OrderController extends Controller
             }
         }
 
-        $order = DB::transaction(function () use ($request, $products, $validated, $totalAmount, $orderNumber, $payment, $directSuccess) {
+        $order = DB::transaction(function () use ($request, $cartItems, $validated, $totalAmount, $orderNumber, $payment, $directSuccess) {
             $order = Order::query()->create([
                 'order_number' => $orderNumber,
                 'buyer_id' => $request->user()->id,
@@ -168,20 +198,42 @@ class OrderController extends Controller
                 'payment_url' => $payment['redirect_url'] ?? null,
             ]);
 
-            foreach ($products as $product) {
-                $order->items()->create([
-                    'product_id' => $product->id,
-                    'product_title' => $product->title,
-                    'unit_price' => $product->price,
-                    'file_path' => $product->google_sheet_id === null ? $product->file_path : null,
-                    'file_name' => $product->google_sheet_id === null ? $product->original_filename : null,
-                    'google_sheet_id' => $product->google_sheet_id,
-                ]);
+            foreach ($cartItems as $cartItem) {
+                $product = $cartItem->product;
+                if (! $product) {
+                    continue;
+                }
+                $quantity = max(1, (int) $cartItem->quantity);
+
+                for ($i = 1; $i <= $quantity; $i++) {
+                    $rawEmail = $validated['item_emails'][$product->id] ?? null;
+                    $itemEmail = null;
+
+                    if (is_array($rawEmail)) {
+                        $itemEmail = $rawEmail[$i] ?? ($rawEmail[0] ?? null);
+                    } elseif (is_string($rawEmail)) {
+                        $itemEmail = $rawEmail;
+                    }
+
+                    $resolvedEmail = filled($itemEmail)
+                        ? mb_strtolower(trim($itemEmail))
+                        : mb_strtolower(trim($validated['customer_email']));
+
+                    $order->items()->create([
+                        'product_id' => $product->id,
+                        'unit_number' => $i,
+                        'product_title' => $quantity > 1 ? "{$product->title} (#{$i})" : $product->title,
+                        'unit_price' => $product->price,
+                        'file_path' => $product->google_sheet_id === null ? $product->file_path : null,
+                        'file_name' => $product->google_sheet_id === null ? $product->original_filename : null,
+                        'google_sheet_id' => $product->google_sheet_id,
+                        'recipient_email' => $resolvedEmail,
+                    ]);
+                }
             }
 
             CartItem::query()
                 ->where('user_id', $request->user()->id)
-                ->whereIn('product_id', $products->modelKeys())
                 ->delete();
 
             return $order;
@@ -190,8 +242,9 @@ class OrderController extends Controller
         if ($directSuccess) {
             $order->loadMissing('items');
             foreach ($order->items->whereNotNull('google_sheet_id') as $item) {
+                $targetEmail = $item->recipient_email ?: $validated['customer_email'];
                 try {
-                    $googleDrive->createBuyerCopy($item, $validated['customer_email'], $orderNumber);
+                    $googleDrive->createBuyerCopy($item, $targetEmail, $orderNumber);
                 } catch (GoogleDriveCopyException $exception) {
                     Log::error("Direct checkout Google Sheets copy failed: ".$exception->getMessage());
                 }
@@ -217,23 +270,32 @@ class OrderController extends Controller
     {
         abort_unless($product->status === Product::STATUS_PUBLISHED, 404);
 
-        CartItem::query()->firstOrCreate([
+        $validated = $request->validate([
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $addQuantity = (int) ($validated['quantity'] ?? 1);
+
+        $cartItem = CartItem::firstOrNew([
             'user_id' => $request->user()->id,
             'product_id' => $product->id,
         ]);
+
+        $cartItem->quantity = ($cartItem->exists ? (int) $cartItem->quantity : 0) + $addQuantity;
+        $cartItem->save();
 
         return to_route('checkout.show');
     }
 
     /**
-     * @return Collection<int, Product>
+     * @return Collection<int, CartItem>
      */
-    private function cartProducts(Request $request): Collection
+    private function cartItemsWithProducts(Request $request): Collection
     {
-        return Product::query()
-            ->whereIn('id', $request->user()->cartItems()->pluck('product_id'))
-            ->where('status', Product::STATUS_PUBLISHED)
-            ->orderBy('id')
-            ->get();
+        return $request->user()->cartItems()
+            ->with('product')
+            ->get()
+            ->filter(fn ($item) => $item->product !== null && $item->product->status === Product::STATUS_PUBLISHED)
+            ->values();
     }
 }

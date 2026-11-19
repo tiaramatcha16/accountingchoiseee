@@ -28,6 +28,7 @@ export interface CartItemData {
     title: string;
     category: string;
     price: number;
+    quantity?: number;
     slug?: string;
 }
 

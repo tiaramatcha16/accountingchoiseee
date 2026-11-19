@@ -43,11 +43,11 @@ class MidtransSnapService
                 'gross_amount' => $amount,
             ],
             'enabled_payments' => ['gopay'],
-            'item_details' => $products->map(fn (Product $product) => [
-                'id' => (string) $product->id,
-                'price' => $product->price,
-                'quantity' => 1,
-                'name' => mb_substr($product->title, 0, 50),
+            'item_details' => $products->map(fn ($product) => [
+                'id' => (string) ($product->id ?? $product['id'] ?? 'item'),
+                'price' => (int) ($product->price ?? $product['price'] ?? 0),
+                'quantity' => (int) ($product->quantity ?? $product['quantity'] ?? 1),
+                'name' => mb_substr($product->title ?? $product['name'] ?? 'Template', 0, 50),
             ])->all(),
             'customer_details' => [
                 'first_name' => $customer['name'],

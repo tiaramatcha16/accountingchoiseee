@@ -10,7 +10,15 @@ class CartItem extends Model
     protected $fillable = [
         'user_id',
         'product_id',
+        'quantity',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+        ];
+    }
 
     public function user(): BelongsTo
     {

@@ -17,7 +17,7 @@ class BuyerOrderController extends Controller
     {
         $orders = Order::query()->where('buyer_id', $request->user()->id)
             ->with([
-                'items:id,order_id,product_id,product_title,unit_price,google_sheet_id,delivery_file_id,delivery_url',
+                'items:id,order_id,product_id,product_title,unit_price,google_sheet_id,recipient_email,delivery_file_id,delivery_url',
                 'items.product:id,usage_guide',
             ])
             ->latest()->paginate(15);
@@ -27,7 +27,8 @@ class BuyerOrderController extends Controller
                 foreach ($order->items as $item) {
                     if (filled($item->google_sheet_id) && blank($item->delivery_url)) {
                         try {
-                            $googleDrive->createBuyerCopy($item, $order->customer_email, $order->order_number);
+                            $targetEmail = $item->recipient_email ?: $order->customer_email;
+                            $googleDrive->createBuyerCopy($item, $targetEmail, $order->order_number);
                             $item->refresh();
                         } catch (\Throwable $e) {
                             \Illuminate\Support\Facades\Log::warning("Lazy Google Sheets copy creation failed for item {$item->id}: {$e->getMessage()}");

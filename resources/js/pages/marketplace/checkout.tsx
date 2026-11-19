@@ -5,10 +5,14 @@ import { type FormEvent } from 'react';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
 interface CheckoutItem {
+    cart_key: string;
     id: number;
+    unit_number: number;
+    total_units: number;
     title: string;
     category: string;
     price: number;
+    is_google_sheet?: boolean;
 }
 
 interface CheckoutProps {
@@ -31,12 +35,32 @@ const formatRupiah = (amount: number) =>
     }).format(amount);
 
 export default function CheckoutPage({ items, total, offlineCheckout, directSuccess, customer }: CheckoutProps) {
+    const initialItemEmails: Record<number, Record<number, string>> = {};
+    items.forEach((item) => {
+        if (!initialItemEmails[item.id]) {
+            initialItemEmails[item.id] = {};
+        }
+        initialItemEmails[item.id][item.unit_number] = customer.email ?? '';
+    });
+
     const form = useForm({
         customer_name: customer.name ?? '',
         customer_phone: customer.phone ?? '',
         customer_email: customer.email ?? '',
+        item_emails: initialItemEmails,
         payment: '',
     });
+
+    const setAllItemEmailsToCustomerEmail = () => {
+        const updated: Record<number, Record<number, string>> = {};
+        items.forEach((item) => {
+            if (!updated[item.id]) {
+                updated[item.id] = {};
+            }
+            updated[item.id][item.unit_number] = form.data.customer_email;
+        });
+        form.setData('item_emails', updated);
+    };
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -121,7 +145,7 @@ export default function CheckoutPage({ items, total, offlineCheckout, directSucc
 
                             <div>
                                 <label htmlFor="customer_email" className="mb-2 block text-sm font-semibold text-slate-800">
-                                    Email aktif untuk menerima file
+                                    Email utama pemesan (Notifikasi & Bukti Pembayaran)
                                 </label>
                                 <div className="relative">
                                     <Mail className="absolute top-3.5 left-3.5 h-4 w-4 text-slate-400" />
@@ -139,10 +163,92 @@ export default function CheckoutPage({ items, total, offlineCheckout, directSucc
                                     />
                                 </div>
                                 {form.errors.customer_email && <p className="mt-1.5 text-xs text-red-600">{form.errors.customer_email}</p>}
-                                <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-                                    {offlineCheckout
-                                        ? 'Email ini disimpan bersama pesanan uji coba. File belum dikirim sampai pembayaran dan layanan email diaktifkan.'
-                                        : 'Pastikan email benar dan aktif. Tautan salinan Google Sheets atau file Excel akan dikirim ke email ini setelah pembayaran berhasil. Aksesnya juga tersedia di Pesanan Saya.'}
+                            </div>
+
+                            {/* Kolom Khusus Email Penerima per Unit Template */}
+                            <div className="space-y-4 pt-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">
+                                            Alamat Email Akun Google per Unit / Kuantitas Template
+                                        </h3>
+                                        <p className="mt-0.5 text-xs text-slate-500">
+                                            Setiap unit pembelian memiliki kolom input email tersendiri. Anda dapat menggunakan email yang sama atau berbeda untuk setiap unit.
+                                        </p>
+                                    </div>
+                                    {items.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={setAllItemEmailsToCustomerEmail}
+                                            className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+                                        >
+                                            Samakan semua dengan email pemesan
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {items.map((item, index) => {
+                                        const errorKey = `item_emails.${item.id}.${item.unit_number}`;
+                                        const errorMessage = form.errors[errorKey as keyof typeof form.errors];
+
+                                        return (
+                                            <div
+                                                key={item.cart_key}
+                                                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100"
+                                            >
+                                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-bold text-emerald-800">
+                                                            {index + 1}
+                                                        </span>
+                                                        <span className="text-sm font-bold text-slate-900">
+                                                            {item.title} {item.total_units > 1 && `(Lisensi / Akses #${item.unit_number} dari ${item.total_units})`}
+                                                        </span>
+                                                    </div>
+                                                    <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                                        {item.is_google_sheet ? 'Akses Google Sheets' : 'File Excel'}
+                                                    </span>
+                                                </div>
+
+                                                <label htmlFor={`item_email_${item.id}_${item.unit_number}`} className="mb-1.5 block text-xs font-medium text-slate-600">
+                                                    {item.is_google_sheet
+                                                        ? `Akun Gmail penerima untuk "${item.title}" #${item.unit_number}:`
+                                                        : `Email tujuan pengiriman untuk "${item.title}" #${item.unit_number}:`}
+                                                </label>
+                                                <div className="relative">
+                                                    <Mail className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
+                                                    <input
+                                                        id={`item_email_${item.id}_${item.unit_number}`}
+                                                        type="email"
+                                                        required
+                                                        value={form.data.item_emails[item.id]?.[item.unit_number] ?? ''}
+                                                        onChange={(event) => {
+                                                            const currentProductEmails = form.data.item_emails[item.id] || {};
+                                                            form.setData('item_emails', {
+                                                                ...form.data.item_emails,
+                                                                [item.id]: {
+                                                                    ...currentProductEmails,
+                                                                    [item.unit_number]: event.target.value,
+                                                                },
+                                                            });
+                                                        }}
+                                                        className="w-full rounded-xl border border-slate-300 py-2.5 pr-4 pl-9 text-sm transition outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 bg-white"
+                                                        placeholder="nama.akun@gmail.com"
+                                                    />
+                                                </div>
+                                                {errorMessage && (
+                                                    <p className="mt-1 text-xs text-red-600">
+                                                        {errorMessage}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+                                    Pastikan email yang Anda masukkan aktif. Hak akses edit untuk setiap Google Sheets akan dikunci khusus ke akun Gmail masing-masing unit di atas setelah pesanan lunas.
                                 </p>
                             </div>
 
@@ -189,9 +295,11 @@ export default function CheckoutPage({ items, total, offlineCheckout, directSucc
                         <h2 className="font-heading text-lg font-bold text-slate-900">Ringkasan pesanan</h2>
                         <div className="mt-5 divide-y divide-slate-200">
                             {items.map((item) => (
-                                <div key={item.id} className="flex justify-between gap-4 py-4 first:pt-0">
+                                <div key={item.cart_key} className="flex justify-between gap-4 py-4 first:pt-0">
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                                        <p className="text-sm font-semibold text-slate-900">
+                                            {item.title} {item.total_units > 1 && `(#${item.unit_number})`}
+                                        </p>
                                         <p className="mt-1 text-xs text-slate-500">{item.category}</p>
                                     </div>
                                     <p className="shrink-0 text-sm font-bold text-slate-800">{formatRupiah(item.price)}</p>

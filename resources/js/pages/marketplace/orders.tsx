@@ -12,6 +12,7 @@ interface Item {
     unit_price: number;
     delivery_type: 'file' | 'google_sheets';
     delivery_url: string | null;
+    recipient_email?: string | null;
     guide_available: boolean;
 }
 
@@ -152,7 +153,15 @@ export default function BuyerOrders({ orders, status }: { orders: Paginated<Orde
                                         >
                                             <div>
                                                 <h4 className="font-heading text-sm font-bold text-gray-900">{item.product_title}</h4>
-                                                <p className="mt-0.5 text-xs text-gray-500">Harga satuan: {formatRupiah(item.unit_price)}</p>
+                                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                                                    <span>Harga satuan: {formatRupiah(item.unit_price)}</span>
+                                                    {item.recipient_email && (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                                                            Akses akun: <strong className="font-mono text-emerald-900">{item.recipient_email}</strong>
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-2 sm:justify-end">

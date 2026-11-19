@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, Check, FileSpreadsheet, LockKeyhole, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, FileSpreadsheet, LockKeyhole, Minus, Plus, ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
 
 import { useCart } from '@/hooks/use-cart';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -30,6 +31,7 @@ export default function ProductDetailPage({ product }: { product: Product }) {
 
 function ProductDetailContent({ product }: { product: Product }) {
     const { addToCart, isInCart, setIsCartOpen } = useCart();
+    const [qty, setQty] = useState(1);
     const inCart = isInCart(product.id);
 
     return (
@@ -117,28 +119,62 @@ function ProductDetailContent({ product }: { product: Product }) {
                             </li>
                         </ul>
 
-                        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (inCart) {
-                                        setIsCartOpen(true);
-                                    } else {
-                                        addToCart({ id: product.id, title: product.title });
-                                    }
-                                }}
-                                className="bg-brand-primary shadow-brand-primary/15 hover:bg-brand-primary-dark inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white shadow-md transition"
-                            >
-                                <ShoppingBag className="h-4 w-4" />
-                                {inCart ? 'Lihat Keranjang' : 'Tambah ke Keranjang'}
-                            </button>
-                            <Link
-                                href="/templates"
-                                className="hover:border-brand-primary/30 hover:text-brand-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-black/10 px-5 py-3 text-sm font-semibold text-slate-700 transition"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Kembali ke Katalog
-                            </Link>
+                        <div className="mt-7 flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs font-semibold text-slate-700">Jumlah Template:</label>
+                                <div className="inline-flex items-center rounded-xl border border-slate-300 bg-white p-1 shadow-2xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setQty(Math.max(1, qty - 1))}
+                                        disabled={qty <= 1}
+                                        aria-label="Kurangi jumlah"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
+                                    >
+                                        <Minus className="h-4 w-4" />
+                                    </button>
+                                    <span className="w-10 text-center text-sm font-bold text-slate-900">{qty}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setQty(Math.min(50, qty + 1))}
+                                        aria-label="Tambah jumlah"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <span className="text-xs text-slate-500">
+                                    Total: <strong className="text-slate-800">{formatRupiah(product.price * qty)}</strong>
+                                </span>
+                            </div>
+
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        addToCart({ id: product.id, title: product.title }, qty);
+                                    }}
+                                    className="bg-brand-primary shadow-brand-primary/15 hover:bg-brand-primary-dark inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white shadow-md transition"
+                                >
+                                    <ShoppingBag className="h-4 w-4" />
+                                    {inCart ? `Tambah ${qty} Lagi ke Keranjang` : `Tambah ke Keranjang (${qty})`}
+                                </button>
+                                {inCart && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCartOpen(true)}
+                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-emerald-600 px-5 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50 transition"
+                                    >
+                                        Lihat Keranjang
+                                    </button>
+                                )}
+                                <Link
+                                    href="/templates"
+                                    className="hover:border-brand-primary/30 hover:text-brand-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-black/10 px-5 py-3 text-sm font-semibold text-slate-700 transition"
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    Kembali ke Katalog
+                                </Link>
+                            </div>
                         </div>
 
                         <Link

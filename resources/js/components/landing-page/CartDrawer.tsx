@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react';
+import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -7,7 +7,7 @@ import { useCart } from '@/hooks/use-cart';
 import { type SharedData } from '@/types';
 
 export default function CartDrawer() {
-    const { items, removeFromCart, totalAmount, isCartOpen, setIsCartOpen } = useCart();
+    const { items, removeFromCart, updateQuantity, totalAmount, isCartOpen, setIsCartOpen } = useCart();
     const { auth } = usePage<SharedData>().props;
     const user = auth?.user;
 
@@ -42,7 +42,9 @@ export default function CartDrawer() {
                             </span>
                             <div>
                                 <SheetTitle className="font-heading text-lg font-bold text-black">Keranjang Belanja</SheetTitle>
-                                <SheetDescription className="text-xs text-black/55">{items.length} template di dalam keranjang</SheetDescription>
+                                <SheetDescription className="text-xs text-black/55">
+                                    {items.reduce((s, it) => s + (it.quantity || 1), 0)} unit template di dalam keranjang
+                                </SheetDescription>
                             </div>
                         </div>
                     </div>
@@ -75,23 +77,58 @@ export default function CartDrawer() {
                             {items.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="flex items-start justify-between gap-3 rounded-2xl border border-black/[0.07] bg-white p-3.5 shadow-xs transition hover:border-black/15"
+                                    className="rounded-2xl border border-black/[0.07] bg-white p-3.5 shadow-xs transition hover:border-black/15"
                                 >
-                                    <div className="min-w-0 flex-1">
-                                        <span className="bg-brand-primary/10 text-brand-primary inline-block rounded-md px-2 py-0.5 text-[10px] font-bold">
-                                            {item.category}
-                                        </span>
-                                        <h5 className="font-heading mt-1 line-clamp-2 text-xs leading-snug font-bold text-black">{item.title}</h5>
-                                        <p className="text-brand-primary mt-2 text-xs font-bold">{formatRupiah(item.price)}</p>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="bg-brand-primary/10 text-brand-primary inline-block rounded-md px-2 py-0.5 text-[10px] font-bold">
+                                                {item.category}
+                                            </span>
+                                            <h5 className="font-heading mt-1 line-clamp-2 text-xs leading-snug font-bold text-black">{item.title}</h5>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            aria-label="Hapus dari keranjang"
+                                            onClick={() => removeFromCart(item.id)}
+                                            className="rounded-lg p-1.5 text-black/40 transition hover:bg-red-50 hover:text-red-600"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        aria-label="Hapus dari keranjang"
-                                        onClick={() => removeFromCart(item.id)}
-                                        className="rounded-lg p-1.5 text-black/40 transition hover:bg-red-50 hover:text-red-600"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+
+                                    <div className="mt-3 flex items-center justify-between border-t border-black/[0.05] pt-2.5">
+                                        <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
+                                                aria-label="Kurangi jumlah"
+                                                className="flex h-6 w-6 items-center justify-center rounded-md text-slate-600 transition hover:bg-white hover:text-black hover:shadow-xs"
+                                            >
+                                                <Minus className="h-3 w-3" />
+                                            </button>
+                                            <span className="w-8 text-center text-xs font-bold text-slate-800">
+                                                {item.quantity || 1}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                                                aria-label="Tambah jumlah"
+                                                className="flex h-6 w-6 items-center justify-center rounded-md text-slate-600 transition hover:bg-white hover:text-black hover:shadow-xs"
+                                            >
+                                                <Plus className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-brand-primary text-xs font-bold">
+                                                {formatRupiah((item.price || 0) * (item.quantity || 1))}
+                                            </p>
+                                            {(item.quantity || 1) > 1 && (
+                                                <p className="text-[10px] text-slate-400">
+                                                    {formatRupiah(item.price)} / unit
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

@@ -54,6 +54,7 @@
     </table>
 
     <table class="periods">
+        
         <tr>
             <td class="period-card" width="50%">
                 <div class="period-label">Rentang grafik · {{ $report['chart']['groupLabel'] }}</div>

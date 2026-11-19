@@ -19,6 +19,7 @@ test('checkout refuses to charge for Google Sheets when Drive delivery is not co
         'services.midtrans.server_key' => 'test-midtrans-server-key',
         'services.midtrans.is_production' => false,
         'services.midtrans.offline_checkout_enabled' => false,
+        'services.midtrans.direct_success' => false,
         'services.google_drive.client_id' => null,
         'services.google_drive.client_secret' => null,
         'services.google_drive.refresh_token' => null,
@@ -68,6 +69,7 @@ test('checkout refuses to charge when the master sheet cannot be accessed', func
         'services.midtrans.server_key' => 'test-midtrans-server-key',
         'services.midtrans.is_production' => false,
         'services.midtrans.offline_checkout_enabled' => false,
+        'services.midtrans.direct_success' => false,
         'services.google_drive.client_id' => 'test-client-id',
         'services.google_drive.client_secret' => 'test-client-secret',
         'services.google_drive.refresh_token' => 'test-refresh-token',
@@ -107,6 +109,7 @@ test('verified payment creates one Google Sheets copy and shares it with the buy
         'services.midtrans.server_key' => 'test-midtrans-server-key',
         'services.midtrans.is_production' => false,
         'services.midtrans.offline_checkout_enabled' => false,
+        'services.midtrans.direct_success' => false,
         'services.google_drive.client_id' => 'test-client-id',
         'services.google_drive.client_secret' => 'test-client-secret',
         'services.google_drive.refresh_token' => 'test-refresh-token',
@@ -331,4 +334,75 @@ test('direct success checkout mode immediately marks order paid and creates Goog
         && $request->method() === 'POST'
         && $request['role'] === 'writer'
         && $request['emailAddress'] === 'directbuyer@example.com');
+});
+
+test('checkout allows separate Google recipient email per template item and shares copy with designated recipient', function () {
+    Cache::forget('google-drive-access-token');
+    config([
+        'services.midtrans.direct_success' => true,
+        'services.google_drive.client_id' => 'test-client-id',
+        'services.google_drive.client_secret' => 'test-client-secret',
+        'services.google_drive.refresh_token' => 'test-refresh-token',
+    ]);
+
+    Http::fake(function (HttpRequest $request) {
+        $path = parse_url($request->url(), PHP_URL_PATH);
+
+        if ($path === '/token') {
+            return Http::response(['access_token' => 'test-google-access-token', 'expires_in' => 3600]);
+        }
+        if ($path === '/drive/v3/files' && $request->method() === 'GET') {
+            return Http::response(['files' => []]);
+        }
+        if ($path === '/drive/v3/files/sheet-master-a' && $request->method() === 'GET') {
+            return Http::response(['id' => 'sheet-master-a', 'mimeType' => 'application/vnd.google-apps.spreadsheet']);
+        }
+        if ($path === '/drive/v3/files/sheet-master-a/copy' && $request->method() === 'POST') {
+            return Http::response(['id' => 'copy-sheet-a', 'mimeType' => 'application/vnd.google-apps.spreadsheet']);
+        }
+        if ($path === '/drive/v3/files/copy-sheet-a' && $request->method() === 'PATCH') {
+            return Http::response(['id' => 'copy-sheet-a'], 200);
+        }
+        if ($path === '/drive/v3/files/copy-sheet-a/permissions' && $request->method() === 'GET') {
+            return Http::response(['permissions' => []]);
+        }
+        if ($path === '/drive/v3/files/copy-sheet-a/permissions' && $request->method() === 'POST') {
+            return Http::response(['id' => 'perm-a'], 200);
+        }
+
+        return Http::response(['error' => 'Unexpected Google request.'], 500);
+    });
+
+    $buyer = User::factory()->create(['email' => 'buyer@example.com']);
+    $seller = User::factory()->create();
+    $productA = Product::create([
+        'created_by' => $seller->id,
+        'title' => 'Template Anggaran Perusahaan',
+        'slug' => 'template-anggaran-perusahaan',
+        'category' => 'Keuangan',
+        'description' => 'Template anggaran',
+        'price' => 50000,
+        'google_sheet_id' => 'sheet-master-a',
+        'status' => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->actingAs($buyer)->post('/cart', ['product_id' => $productA->id])->assertRedirect();
+    $this->post('/checkout', [
+        'customer_name' => 'Bendahara Kantor',
+        'customer_phone' => '081234567890',
+        'customer_email' => 'pembeli.utama@example.com',
+        'item_emails' => [
+            $productA->id => 'karyawan.keuangan@gmail.com',
+        ],
+    ])->assertRedirect('/my-orders');
+
+    $order = Order::query()->where('buyer_id', $buyer->id)->firstOrFail();
+    $itemA = $order->items()->firstOrFail();
+    expect($itemA->recipient_email)->toBe('karyawan.keuangan@gmail.com');
+
+    Http::assertSent(fn (HttpRequest $request) => str_contains($request->url(), '/permissions')
+        && $request->method() === 'POST'
+        && $request['role'] === 'writer'
+        && $request['emailAddress'] === 'karyawan.keuangan@gmail.com');
 });

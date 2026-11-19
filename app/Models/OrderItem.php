@@ -12,13 +12,16 @@ class OrderItem extends Model
     protected $appends = ['delivery_type'];
 
     protected $fillable = [
-        'order_id', 'product_id', 'product_title', 'unit_price', 'file_path', 'file_name',
-        'google_sheet_id', 'delivery_file_id', 'delivery_url',
+        'order_id', 'product_id', 'unit_number', 'product_title', 'unit_price', 'file_path', 'file_name',
+        'google_sheet_id', 'recipient_email', 'delivery_file_id', 'delivery_url',
     ];
 
     protected function casts(): array
     {
-        return ['unit_price' => 'integer'];
+        return [
+            'unit_price' => 'integer',
+            'unit_number' => 'integer',
+        ];
     }
 
     public function getDeliveryTypeAttribute(): string

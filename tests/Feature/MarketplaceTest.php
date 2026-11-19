@@ -125,6 +125,7 @@ test('buyer can checkout multiple products from cart', function () {
     config([
         'services.midtrans.server_key' => 'test-server-key',
         'services.midtrans.is_production' => false,
+        'services.midtrans.direct_success' => false,
         'mail.default' => 'smtp',
     ]);
     $paymentUrl = 'https://app.sandbox.midtrans.com/snap/v2/vtweb/test-token';
@@ -246,6 +247,7 @@ test('local offline checkout saves a pending order without charging or deliverin
     config([
         'services.midtrans.server_key' => null,
         'services.midtrans.offline_checkout_enabled' => true,
+        'services.midtrans.direct_success' => false,
         'mail.default' => 'log',
     ]);
 
@@ -292,6 +294,7 @@ test('checkout requires customer contact details before creating a QRIS order', 
     config([
         'services.midtrans.server_key' => 'test-server-key',
         'services.midtrans.is_production' => false,
+        'services.midtrans.direct_success' => false,
     ]);
     Http::fake();
 
@@ -318,6 +321,7 @@ test('checkout does not create a payment until email delivery is configured', fu
         'services.midtrans.server_key' => 'test-server-key',
         'services.midtrans.is_production' => false,
         'services.midtrans.offline_checkout_enabled' => false,
+        'services.midtrans.direct_success' => false,
         'mail.default' => 'log',
     ]);
 

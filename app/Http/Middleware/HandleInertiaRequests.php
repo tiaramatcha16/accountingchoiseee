@@ -55,18 +55,21 @@ class HandleInertiaRequests extends Middleware
                     return null;
                 }
 
+                $cartItems = $request->user()->cartItems()
+                    ->with('product:id,title,category,price,slug')
+                    ->get()
+                    ->filter(fn ($item) => $item->product !== null);
+
                 return [
-                    'count' => $request->user()->cartItems()->count(),
-                    'items' => $request->user()->cartItems()
-                        ->with('product:id,title,category,price,slug')
-                        ->get()
-                        ->filter(fn ($item) => $item->product !== null)
+                    'count' => (int) $cartItems->sum('quantity'),
+                    'items' => $cartItems
                         ->map(fn ($item) => [
                             'id' => $item->product->id,
                             'title' => $item->product->title,
                             'category' => $item->product->category,
                             'price' => $item->product->price,
                             'slug' => $item->product->slug,
+                            'quantity' => (int) ($item->quantity ?? 1),
                         ])
                         ->values()
                         ->all(),

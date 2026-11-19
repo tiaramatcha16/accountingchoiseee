@@ -7,10 +7,12 @@ export type CartItem = CartItemData;
 
 interface CartContextType {
     items: CartItem[];
-    addToCart: (item: { id: number; title?: string }) => void;
+    addToCart: (item: { id: number; title?: string }, quantity?: number) => void;
+    updateQuantity: (id: number, quantity: number) => void;
     removeFromCart: (id: number) => void;
     clearCart: () => void;
     isInCart: (id: number) => boolean;
+    getItemQuantity: (id: number) => number;
     totalAmount: number;
     cartCount: number;
     isCartOpen: boolean;
@@ -36,9 +38,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const items: CartItem[] = cart?.items ?? [];
-    const cartCount: number = cart?.count ?? items.length;
+    const cartCount: number = cart?.count ?? items.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-    const addToCart = (item: { id: number; title?: string }) => {
+    const addToCart = (item: { id: number; title?: string }, quantity: number = 1) => {
         if (!user) {
             router.visit(route('login'));
             return;
@@ -46,12 +48,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
         router.post(
             route('cart.store'),
-            { product_id: item.id },
+            { product_id: item.id, quantity },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     setIsCartOpen(true);
                 },
+            }
+        );
+    };
+
+    const updateQuantity = (id: number, quantity: number) => {
+        if (!user) return;
+        if (quantity < 1) {
+            removeFromCart(id);
+            return;
+        }
+
+        router.patch(
+            route('cart.update', id),
+            { quantity },
+            {
+                preserveScroll: true,
             }
         );
     };
@@ -74,16 +92,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const isInCart = (id: number) => items.some((i) => i.id === id);
 
-    const totalAmount = items.reduce((sum, item) => sum + (item.price || 0), 0);
+    const getItemQuantity = (id: number) => items.find((i) => i.id === id)?.quantity ?? 0;
+
+    const totalAmount = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
 
     return (
         <CartContext.Provider
             value={{
                 items,
                 addToCart,
+                updateQuantity,
                 removeFromCart,
                 clearCart,
                 isInCart,
+                getItemQuantity,
                 totalAmount,
                 cartCount,
                 isCartOpen,
