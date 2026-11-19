@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\SalesAnalyticsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Marketplace\BuyerOrderController;
 use App\Http\Controllers\Marketplace\CartController;
 use App\Http\Controllers\Marketplace\CatalogController;
@@ -40,10 +39,7 @@ Route::post('/templates/recommendations', ProductRecommendationController::class
 Route::get('/templates/{product:slug}', [CatalogController::class, 'show'])->name('catalog.show');
 Route::post('/payments/midtrans/notification', MidtransNotificationController::class)->name('payments.midtrans.notification');
 
-Route::middleware('guest')->group(function () {
-    Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
-    Route::post('/admin/login', [AuthenticatedSessionController::class, 'storeAdmin'])->name('admin.login.store');
-});
+Route::redirect('/admin/login', '/login')->name('admin.login');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function (Request $request) {

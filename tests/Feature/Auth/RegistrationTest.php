@@ -11,8 +11,6 @@ test('new users are persisted as buyers and redirected to the storefront', funct
         'name' => 'Test User',
         'email' => 'TEST@example.com',
         'phone' => '081234567890',
-        'institution' => 'Personal',
-        'city' => 'Jakarta',
         'password' => 'password',
         'password_confirmation' => 'password',
         // Malicious or stale clients cannot grant admin permissions.
@@ -24,8 +22,8 @@ test('new users are persisted as buyers and redirected to the storefront', funct
         'name' => 'Test User',
         'email' => 'test@example.com',
         'phone' => '081234567890',
-        'institution' => 'Personal',
-        'city' => 'Jakarta',
+        'institution' => null,
+        'city' => null,
         'role' => 'buyer',
     ]);
 
@@ -34,15 +32,20 @@ test('new users are persisted as buyers and redirected to the storefront', funct
     $response->assertRedirect(route('home', absolute: false));
 });
 
-test('registration requires phone, institution, and city', function () {
+test('registration does not require institution or city', function () {
     $response = $this->post('/register', [
-        'name' => 'No Phone User',
-        'email' => 'nophone@example.com',
+        'name' => 'Buyer Without Institution Or City',
+        'email' => 'buyer-without-location@example.com',
+        'phone' => '081234567890',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);
 
-    $this->assertGuest();
-    $response->assertSessionHasErrors(['phone', 'institution', 'city']);
-    $this->assertDatabaseMissing('users', ['email' => 'nophone@example.com']);
+    $this->assertAuthenticated();
+    $response->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('users', [
+        'email' => 'buyer-without-location@example.com',
+        'institution' => null,
+        'city' => null,
+    ]);
 });

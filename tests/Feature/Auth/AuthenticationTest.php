@@ -29,10 +29,10 @@ test('buyers return to their intended checkout after login', function () {
         ->assertRedirect('/checkout');
 });
 
-test('admins can log in through the admin login and reach the admin dashboard', function () {
+test('admins can log in through the shared login and reach the admin dashboard', function () {
     $admin = User::factory()->admin()->create(['email' => 'admin@example.com']);
 
-    $response = $this->post('/admin/login', [
+    $response = $this->post('/login', [
         'email' => 'admin@example.com',
         'password' => 'password',
     ]);

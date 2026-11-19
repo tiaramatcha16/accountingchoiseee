@@ -18,43 +18,16 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
-            'roleError' => $request->session()->get('role_error'),
-            'adminMode' => $request->routeIs('admin.login'),
         ]);
     }
 
-    public function storeBuyer(LoginRequest $request): RedirectResponse
-    {
-        return $this->authenticateForRole($request, 'buyer');
-    }
-
-    public function storeAdmin(LoginRequest $request): RedirectResponse
-    {
-        return $this->authenticateForRole($request, 'admin');
-    }
-
-    private function authenticateForRole(LoginRequest $request, string $expectedRole): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-        $user = $request->user();
-
-        if (($user->role ?? 'buyer') !== $expectedRole) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            $loginRoute = $expectedRole === 'admin' ? 'admin.login' : 'login';
-            $message = $expectedRole === 'admin'
-                ? 'Akun ini bukan akun admin. Gunakan login pembeli.'
-                : 'Akun admin harus masuk melalui halaman login admin.';
-
-            return to_route($loginRoute)->with('role_error', $message);
-        }
-
         $request->session()->regenerate();
 
-        if ($request->user()?->isAdmin()) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+        if ($request->user()->isAdmin()) {
+            return to_route('admin.dashboard');
         }
 
         return redirect()->intended(route('home', absolute: false));

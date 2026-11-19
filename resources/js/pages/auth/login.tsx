@@ -13,30 +13,23 @@ import AuthEntryLayout from '@/layouts/auth/auth-entry-layout';
 type LoginForm = { email: string; password: string; remember: boolean };
 interface LoginProps {
     status?: string;
-    roleError?: string;
     canResetPassword: boolean;
-    adminMode?: boolean;
 }
 
-export default function Login({ status, roleError, canResetPassword, adminMode = false }: LoginProps) {
+export default function Login({ status, canResetPassword }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({ email: '', password: '', remember: false });
 
     const submit: FormEventHandler = (event) => {
         event.preventDefault();
-        post(adminMode ? route('admin.login.store') : route('login.store'), {
+        post(route('login.store'), {
             onFinish: () => reset('password'),
         });
     };
 
     return (
-        <AuthEntryLayout
-            title={adminMode ? 'Login Admin Toko' : 'Masuk sebagai Pembeli'}
-            description={adminMode ? 'Halaman khusus pengelola toko template Excel.' : 'Masuk untuk melihat pesanan dan membeli template Excel.'}
-        >
-            <Head title={adminMode ? 'Login Admin' : 'Login Pembeli'} />
-            {adminMode && <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Akses khusus admin. Akun admin dibuat manual, bukan melalui pendaftaran pembeli.</div>}
-            {roleError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{roleError}</div>}
+        <AuthEntryLayout title="Masuk" description="Masuk untuk mengakses akun dan pesanan Anda.">
+            <Head title="Masuk" />
             {status && (
                 <div
                     role="status"
@@ -50,17 +43,46 @@ export default function Login({ status, roleError, canResetPassword, adminMode =
                 <div className="grid gap-5">
                     <div className="grid gap-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" required autoFocus autoComplete="email" value={data.email} onChange={(event) => setData('email', event.target.value)} placeholder="email@example.com" disabled={processing} />
+                        <Input
+                            id="email"
+                            type="email"
+                            required
+                            autoFocus
+                            autoComplete="email"
+                            value={data.email}
+                            onChange={(event) => setData('email', event.target.value)}
+                            placeholder="email@example.com"
+                            disabled={processing}
+                        />
                         <InputError message={errors.email} />
                     </div>
                     <div className="grid gap-2">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="password">Password</Label>
-                            {!adminMode && canResetPassword && <TextLink href={route('password.request')} className="text-brand-primary text-xs">Lupa password?</TextLink>}
+                            {canResetPassword && (
+                                <TextLink href={route('password.request')} className="text-brand-primary text-xs">
+                                    Lupa password?
+                                </TextLink>
+                            )}
                         </div>
                         <div className="relative">
-                            <Input id="password" type={showPassword ? 'text' : 'password'} required autoComplete="current-password" value={data.password} onChange={(event) => setData('password', event.target.value)} placeholder="Password" disabled={processing} className="pr-10" />
-                            <button type="button" aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'} onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45">
+                            <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                required
+                                autoComplete="current-password"
+                                value={data.password}
+                                onChange={(event) => setData('password', event.target.value)}
+                                placeholder="Password"
+                                disabled={processing}
+                                className="pr-10"
+                            />
+                            <button
+                                type="button"
+                                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45"
+                            >
                                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
                         </div>
@@ -68,7 +90,9 @@ export default function Login({ status, roleError, canResetPassword, adminMode =
                     </div>
                     <div className="flex items-center gap-2">
                         <Checkbox id="remember" checked={data.remember} onCheckedChange={(checked) => setData('remember', checked === true)} />
-                        <Label htmlFor="remember" className="text-xs font-normal">Ingat saya</Label>
+                        <Label htmlFor="remember" className="text-xs font-normal">
+                            Ingat saya
+                        </Label>
                     </div>
                     <HoverBorderGradient
                         type="submit"
@@ -77,17 +101,15 @@ export default function Login({ status, roleError, canResetPassword, adminMode =
                         disabled={processing}
                     >
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        {processing ? 'Memproses...' : adminMode ? 'Masuk Admin' : 'Masuk sebagai Pembeli'}
+                        {processing ? 'Memproses...' : 'Masuk'}
                     </HoverBorderGradient>
                 </div>
-                {!adminMode ? (
-                    <>
-                        <div className="text-center text-sm text-black/55">Belum punya akun? <TextLink href={route('register')} className="text-brand-primary font-semibold">Daftar pembeli</TextLink></div>
-                        <div className="text-center text-xs text-black/45">Pemilik toko? <TextLink href={route('admin.login')} className="text-brand-primary font-semibold">Login admin</TextLink></div>
-                    </>
-                ) : (
-                    <div className="text-center text-sm text-black/55">Pembeli? <TextLink href={route('login')} className="text-brand-primary font-semibold">Login pembeli</TextLink></div>
-                )}
+                <div className="text-center text-sm text-black/55">
+                    Belum punya akun?{' '}
+                    <TextLink href={route('register')} className="text-brand-primary font-semibold">
+                        Daftar pembeli
+                    </TextLink>
+                </div>
             </form>
         </AuthEntryLayout>
     );

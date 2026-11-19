@@ -1,11 +1,11 @@
 # Authentication setup (branch `dev`)
 
-The application stores user credentials in Laravel's `users` table. Public registration creates buyer accounts (`buyer`). The public form only requires name, email, optional phone number, and password (institution and city/domisili inputs have been removed). Admin access is separated and provisioned by the store owner configuration in `.env` / database seeder.
+The application stores user credentials in Laravel's `users` table. Public registration creates buyer accounts (`buyer`) and requires name, email, phone number, and password. Institution and city/domicile are not required. Admin accounts are provisioned by the store owner configuration in `.env` / database seeder. Admins and buyers use the same `/login` page; after successful authentication, admins go to `/admin` and other users go to the storefront.
 
 ## Default Roles & Access
 
 * **Buyer (`buyer`)**: Default role for all public registrations. Redirected to the storefront (`/`) upon login.
-* **Admin (`admin`)**: Has access to `/admin` routes. Redirected directly to `/admin` (`admin.dashboard`) upon login.
+* **Admin (`admin`)**: Has access to `/admin` routes. Redirected directly to `/admin` (`admin.dashboard`) upon login from the shared login page.
 * **Seller (`seller`)**: Can manage and submit template products for review.
 
 ## Admin Configuration

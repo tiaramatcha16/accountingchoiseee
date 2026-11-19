@@ -15,8 +15,6 @@ test('public registration creates a buyer account without external authenticatio
         'name' => 'Buyer Test',
         'email' => 'buyer@example.com',
         'phone' => '08123456789',
-        'institution' => 'Personal',
-        'city' => 'Jakarta',
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertRedirect(route('home', absolute: false));

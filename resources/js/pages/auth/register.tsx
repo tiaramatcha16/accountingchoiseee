@@ -13,8 +13,6 @@ type RegisterForm = {
     name: string;
     email: string;
     phone: string;
-    institution: string;
-    city: string;
     password: string;
     password_confirmation: string;
 };
@@ -26,8 +24,6 @@ export default function Register() {
         name: '',
         email: '',
         phone: '',
-        institution: '',
-        city: '',
         password: '',
         password_confirmation: '',
     });
@@ -101,42 +97,6 @@ export default function Register() {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="institution" className="text-brand-ink text-sm font-medium">
-                            Instansi
-                        </Label>
-                        <Input
-                            id="institution"
-                            required
-                            tabIndex={4}
-                            autoComplete="organization"
-                            value={data.institution}
-                            onChange={(e) => setData('institution', e.target.value)}
-                            disabled={processing}
-                            placeholder="Nama instansi"
-                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
-                        />
-                        <InputError message={errors.institution} />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="city" className="text-brand-ink text-sm font-medium">
-                            Kota Domisili
-                        </Label>
-                        <Input
-                            id="city"
-                            required
-                            tabIndex={5}
-                            autoComplete="address-level2"
-                            value={data.city}
-                            onChange={(e) => setData('city', e.target.value)}
-                            disabled={processing}
-                            placeholder="Kota domisili"
-                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
-                        />
-                        <InputError message={errors.city} />
-                    </div>
-
-                    <div className="grid gap-2">
                         <Label htmlFor="password" className="text-brand-ink text-sm font-medium">
                             Password
                         </Label>
@@ -145,7 +105,7 @@ export default function Register() {
                                 id="password"
                                 type={showPassword ? 'text' : 'password'}
                                 required
-                                tabIndex={6}
+                                tabIndex={4}
                                 autoComplete="new-password"
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
@@ -175,7 +135,7 @@ export default function Register() {
                                 id="password_confirmation"
                                 type={showPasswordConfirmation ? 'text' : 'password'}
                                 required
-                                tabIndex={7}
+                                tabIndex={5}
                                 autoComplete="new-password"
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
@@ -200,7 +160,7 @@ export default function Register() {
                         type="submit"
                         containerClassName="h-10 w-full rounded-lg focus-visible:outline-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-60"
                         className="bg-auth-action hover:bg-brand-primary h-full w-full rounded-lg font-semibold text-white transition-colors"
-                        tabIndex={8}
+                        tabIndex={6}
                         disabled={processing}
                     >
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
@@ -210,7 +170,7 @@ export default function Register() {
 
                 <div className="text-center text-sm text-black/55">
                     Sudah memiliki akun?{' '}
-                    <TextLink href={route('login')} className="text-brand-primary font-semibold" tabIndex={9}>
+                    <TextLink href={route('login')} className="text-brand-primary font-semibold" tabIndex={7}>
                         Masuk
                     </TextLink>
                 </div>
