@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, LogOut, Menu, MessageCircle, Package, Search, Shield, ShoppingBag, Store, X } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { ChevronDown, FileSpreadsheet, LogOut, Menu, MessageCircle, Package, Search, Shield, ShoppingBag, Store, X } from 'lucide-react';
+import { type FormEvent, useEffect, useState } from 'react';
 
 import {
     DropdownMenu,
@@ -15,9 +15,11 @@ import { type SharedData } from '@/types';
 
 const navigation = [
     { label: 'Beranda', href: '/#hero' },
-    { label: 'Kategori', href: '/#pilih-kebutuhan' },
+    { label: 'Fitur', href: '/#fitur' },
     { label: 'Katalog', href: '/#template-list' },
     { label: 'Cara Kerja', href: '/#cara-kerja' },
+    { label: 'Testimoni', href: '/#testimoni' },
+    { label: 'FAQ', href: '/#faq' },
 ];
 
 export default function Navbar() {
@@ -26,6 +28,29 @@ export default function Navbar() {
     const { cartCount, setIsCartOpen } = useCart();
     const [searchQuery, setSearchQuery] = useState('');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+        if (href.startsWith('/#') || href.startsWith('#')) {
+            const targetId = href.replace(/^\/?#/, '');
+            const targetElement = document.getElementById(targetId);
+            
+            // If we are on the homepage or the element exists in current DOM
+            if (targetElement) {
+                e.preventDefault();
+                targetElement.scrollIntoView({ behavior: 'smooth' });
+                window.history.pushState(null, '', `#${targetId}`);
+                setIsMobileMenuOpen(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        const updateScrollState = () => setIsScrolled(window.scrollY > 20);
+        updateScrollState();
+        window.addEventListener('scroll', updateScrollState, { passive: true });
+        return () => window.removeEventListener('scroll', updateScrollState);
+    }, []);
 
     const sellerHref = user?.role === 'seller' ? '/seller/products' : user?.role === 'admin' ? '/admin/products' : null;
     const sellerLabel = user?.role === 'seller' ? 'Toko Saya' : 'Kelola Toko';
@@ -41,16 +66,16 @@ export default function Navbar() {
         <form
             onSubmit={search}
             role="search"
-            className="bg-brand-surface text-brand-ink focus-within:ring-brand-primary/30 flex h-10 w-full items-center gap-2 rounded-full px-4 ring-1 ring-black/[0.04] focus-within:ring-2"
+            className="flex h-9 w-full items-center gap-2 rounded-full bg-slate-100/80 px-3.5 text-slate-900 border border-transparent focus-within:border-slate-300 focus-within:bg-white transition"
         >
-            <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-black/45" />
+            <Search aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
             <input
                 type="search"
                 aria-label="Cari template Excel"
-                placeholder="Cari template Excel..."
+                placeholder="Cari template..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-black/45 focus:ring-0"
+                className="min-w-0 flex-1 border-0 bg-transparent text-xs outline-none placeholder:text-slate-400 focus:ring-0"
             />
             <button type="submit" className="sr-only">
                 Cari
@@ -59,28 +84,32 @@ export default function Navbar() {
     );
 
     return (
-        <header className="sticky top-0 z-40 border-b border-black/[0.07] bg-white/95 shadow-2xs backdrop-blur-md">
-            <div className="mx-auto flex h-[68px] max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-                <Link href="/" aria-label="AccountingChoice, beranda" className="group flex shrink-0 items-center gap-2.5">
-                    <img
-                        src="/images/accounting-choice-logo.png"
-                        alt=""
-                        className="h-10 w-11 object-contain transition-transform group-hover:scale-105"
-                    />
-                    <span className="flex flex-col">
-                        <span className="font-heading text-brand-primary flex items-center text-lg leading-none font-bold tracking-tight sm:text-xl">
-                            Accounting<span className="text-brand-gold">Choice</span>
-                        </span>
-                        <span className="mt-1 text-[9px] font-bold tracking-wider text-black/45 uppercase">Pasar Template Excel</span>
+        <header className="fixed top-0 inset-x-0 z-50 p-3 sm:p-4 pointer-events-none">
+            <div
+                className={`pointer-events-auto mx-auto max-w-7xl rounded-full border transition-all duration-300 px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3 ${
+                    isScrolled
+                        ? 'border-slate-200/90 bg-white/90 shadow-lg shadow-black/5 backdrop-blur-xl'
+                        : 'border-slate-200/70 bg-white/80 shadow-sm backdrop-blur-md'
+                }`}
+            >
+                {/* Brand Logo */}
+                <Link href="/" aria-label="AccountingChoice" className="flex shrink-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#1d1d1f] text-white shadow-xs">
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+                    </span>
+                    <span className="text-base sm:text-lg font-semibold tracking-[-0.03em] text-[#1d1d1f]">
+                        Accounting<span className="text-emerald-700">Choice</span>
                     </span>
                 </Link>
 
-                <nav aria-label="Navigasi utama" className="hidden shrink-0 items-center gap-1 xl:flex">
+                {/* Center Nav Links */}
+                <nav aria-label="Navigasi utama" className="hidden lg:flex items-center gap-1">
                     {navigation.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="hover:bg-brand-surface hover:text-brand-primary rounded-full px-3 py-2 text-[13px] font-semibold text-black/65 transition"
+                            onClick={(e) => handleNavClick(e, item.href)}
+                            className="rounded-full px-3.5 py-1.5 text-xs font-medium text-[#86868b] transition hover:bg-neutral-100 hover:text-[#1d1d1f]"
                         >
                             {item.label}
                         </Link>
@@ -88,27 +117,29 @@ export default function Navbar() {
                     {sellerHref && (
                         <Link
                             href={sellerHref}
-                            className="hover:bg-brand-surface hover:text-brand-primary rounded-full px-3 py-2 text-[13px] font-semibold text-black/65 transition"
+                            className="rounded-full px-3.5 py-1.5 text-xs font-medium text-[#86868b] transition hover:bg-neutral-100 hover:text-[#1d1d1f]"
                         >
                             {sellerLabel}
                         </Link>
                     )}
                 </nav>
 
-                <div className="hidden min-w-0 flex-1 lg:block lg:max-w-xs xl:ml-auto">{searchForm}</div>
+                {/* Search in Desktop */}
+                <div className="hidden md:block w-48 xl:w-60">{searchForm}</div>
 
-                <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
+                {/* Right Actions: Cart & Auth */}
+                <div className="flex shrink-0 items-center gap-2">
                     {user && user.role !== 'admin' && (
                         <button
                             type="button"
-                            aria-label={`Buka keranjang, ${cartCount} item`}
+                            aria-label={`Buka keranjang, ${cartCount} unit`}
                             onClick={() => setIsCartOpen(true)}
-                            className="hover:bg-brand-surface relative inline-flex h-10 items-center justify-center gap-2 rounded-full p-2.5 text-black transition sm:px-3"
+                            className="relative inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 transition hover:bg-slate-50 hover:border-slate-300 shadow-2xs"
                         >
-                            <ShoppingBag className="text-brand-primary h-5 w-5" />
-                            <span className="hidden text-xs font-bold sm:inline">Keranjang</span>
+                            <ShoppingBag className="h-4 w-4 text-emerald-700" />
+                            <span className="hidden sm:inline">Keranjang</span>
                             {cartCount > 0 && (
-                                <span className="bg-brand-primary absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-extrabold text-white">
+                                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-black text-white">
                                     {cartCount}
                                 </span>
                             )}
@@ -120,145 +151,115 @@ export default function Navbar() {
                             <DropdownMenuTrigger asChild>
                                 <button
                                     type="button"
-                                    className="hover:bg-brand-surface flex max-w-[150px] items-center gap-2 rounded-full border border-black/10 bg-white px-2 py-1.5 text-xs font-bold text-black transition sm:px-3"
+                                    className="flex items-center gap-2 rounded-full border border-black/[0.08] bg-white py-1 pr-3 pl-1.5 text-xs font-semibold text-[#1d1d1f] transition hover:bg-neutral-50 shadow-2xs"
                                 >
-                                    <span className="bg-brand-primary/10 text-brand-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold uppercase">
+                                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1d1d1f] text-[10px] font-bold text-white uppercase">
                                         {user.name.charAt(0)}
                                     </span>
-                                    <span className="hidden truncate sm:inline">{user.name}</span>
-                                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-black/40" />
+                                    <span className="max-w-[100px] truncate">{user.name}</span>
+                                    <ChevronDown className="h-3 w-3 text-[#86868b]" />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 rounded-2xl border border-black/10 bg-white p-1.5 shadow-lg">
-                                <DropdownMenuLabel className="px-3 py-2 text-xs text-black/55">
-                                    <p className="text-sm font-bold text-black">{user.name}</p>
-                                    <p className="truncate text-[11px] text-black/50">{user.email}</p>
+                            <DropdownMenuContent align="end" className="w-56 rounded-2xl border border-black/[0.08] bg-white p-1.5 shadow-xl">
+                                <DropdownMenuLabel className="px-3 py-2 text-xs">
+                                    <p className="text-sm font-semibold text-[#1d1d1f]">{user.name}</p>
+                                    <p className="truncate text-[11px] text-[#86868b]">{user.email}</p>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold">
+                                <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium">
                                     <Link href="/my-orders" className="flex items-center gap-2">
-                                        <Package className="text-brand-primary h-4 w-4" />
+                                        <Package className="h-4 w-4 text-emerald-700" />
                                         <span>Pesanan Saya</span>
                                     </Link>
                                 </DropdownMenuItem>
                                 {user.role !== 'admin' && (
-                                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold">
+                                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium">
                                         <Link href="/chat" className="flex items-center gap-2">
-                                            <MessageCircle className="text-brand-primary h-4 w-4" />
+                                            <MessageCircle className="h-4 w-4 text-emerald-700" />
                                             <span>Chat Admin</span>
                                         </Link>
                                     </DropdownMenuItem>
                                 )}
-                                {user.role === 'seller' && (
-                                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold">
-                                        <Link href="/seller/products" className="flex items-center gap-2">
-                                            <Store className="text-brand-primary h-4 w-4" />
-                                            <span>Kelola Template Saya</span>
-                                        </Link>
-                                    </DropdownMenuItem>
-                                )}
                                 {user.role === 'admin' && (
-                                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold">
+                                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium">
                                         <Link href="/admin" className="flex items-center gap-2">
-                                            <Shield className="text-brand-gold-dark h-4 w-4" />
-                                            <span>Panel Admin</span>
+                                            <Shield className="h-4 w-4 text-emerald-700" />
+                                            <span>Dashboard Admin</span>
                                         </Link>
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={() => router.post(route('logout'))}
-                                    className="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold text-red-600 focus:bg-red-50 focus:text-red-700"
-                                >
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    Keluar
+                                <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-rose-600 focus:text-rose-600">
+                                    <Link href="/logout" method="post" as="button" className="flex w-full items-center gap-2">
+                                        <LogOut className="h-4 w-4" />
+                                        <span>Keluar</span>
+                                    </Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <div className="hidden items-center gap-2 sm:flex">
+                        <div className="flex items-center gap-1 sm:gap-2">
                             <Link
-                                href={route('login')}
-                                className="hover:bg-brand-surface rounded-full px-3.5 py-2 text-xs font-bold text-black transition"
+                                href="/login"
+                                className="rounded-full px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition hover:bg-neutral-100"
                             >
                                 Masuk
                             </Link>
                             <Link
-                                href={route('register')}
-                                className="border-brand-primary bg-brand-primary hover:bg-brand-primary-dark rounded-full border px-4 py-2 text-xs font-bold text-white shadow-xs transition"
+                                href="/register"
+                                className="inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-4 py-2 text-xs font-medium text-white shadow-xs transition hover:bg-[#333336] active:scale-95"
                             >
                                 Daftar
                             </Link>
                         </div>
                     )}
 
+                    {/* Mobile Hamburger Button */}
                     <button
                         type="button"
-                        aria-label={isMobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
-                        aria-expanded={isMobileMenuOpen}
-                        aria-controls="mobile-storefront-menu"
-                        onClick={() => setIsMobileMenuOpen((open) => !open)}
-                        className="hover:bg-brand-surface inline-flex h-10 w-10 items-center justify-center rounded-full text-black transition xl:hidden"
+                        aria-label={isMobileMenuOpen ? 'Tutup menu' : 'Buka menu navigasi'}
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="flex lg:hidden h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
                     >
-                        {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                        {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                     </button>
                 </div>
             </div>
 
+            {/* Mobile Dropdown Menu */}
             {isMobileMenuOpen && (
-                <div id="mobile-storefront-menu" className="border-t border-black/[0.07] bg-white px-4 py-4 shadow-lg xl:hidden">
-                    <div className="mx-auto max-w-7xl space-y-4 sm:px-2">
-                        <div className="lg:hidden">{searchForm}</div>
-                        <nav aria-label="Navigasi seluler" className="grid gap-1">
-                            {navigation.map((item) => (
+                <div className="pointer-events-auto mx-auto mt-2 max-w-7xl rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl lg:hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="mb-4">{searchForm}</div>
+                    <div className="space-y-1">
+                        {navigation.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={(e) => handleNavClick(e, item.href)}
+                                className="block rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+
+                        {!user && (
+                            <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                                 <Link
-                                    key={item.href}
-                                    href={item.href}
+                                    href="/login"
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="hover:bg-brand-surface hover:text-brand-primary rounded-xl px-3 py-2.5 text-sm font-semibold text-black/75 transition"
+                                    className="flex-1 text-center rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-800"
                                 >
-                                    {item.label}
+                                    Masuk
                                 </Link>
-                            ))}
-                            {sellerHref && (
                                 <Link
-                                    href={sellerHref}
+                                    href="/register"
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="text-brand-primary hover:bg-brand-primary/5 rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                                    className="flex-1 text-center rounded-xl bg-[#1d1d1f] py-2.5 text-xs font-semibold text-white shadow-xs"
                                 >
-                                    {sellerLabel}
+                                    Daftar
                                 </Link>
-                            )}
-                            {!user && (
-                                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-black/[0.07] pt-3 sm:hidden">
-                                    <Link
-                                        href={route('login')}
-                                        className="rounded-xl border border-black/10 px-3 py-2.5 text-center text-sm font-bold text-black"
-                                    >
-                                        Masuk
-                                    </Link>
-                                    <Link
-                                        href={route('register')}
-                                        className="bg-brand-primary rounded-xl px-3 py-2.5 text-center text-sm font-bold text-white"
-                                    >
-                                        Daftar
-                                    </Link>
-                                </div>
-                            )}
-                            {user && user.role !== 'admin' && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsMobileMenuOpen(false);
-                                        setIsCartOpen(true);
-                                    }}
-                                    className="bg-brand-primary/5 text-brand-primary mt-2 flex items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold"
-                                >
-                                    <span>Keranjang</span>
-                                    <span>{cartCount} item</span>
-                                </button>
-                            )}
-                        </nav>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

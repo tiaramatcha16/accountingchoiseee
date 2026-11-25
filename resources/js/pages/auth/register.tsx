@@ -1,11 +1,8 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthEntryLayout from '@/layouts/auth/auth-entry-layout';
 
@@ -30,19 +27,27 @@ export default function Register() {
 
     const submit: FormEventHandler = (event) => {
         event.preventDefault();
-        post(route('register.store'), { onFinish: () => reset('password', 'password_confirmation') });
+        post(route('register.store'), {
+            onFinish: () => reset('password', 'password_confirmation'),
+        });
     };
 
     return (
-        <AuthEntryLayout title="Buat Akun Pembeli" description="Daftar untuk membeli dan mengunduh template Excel." size="register">
-            <Head title="Daftar Pembeli" />
-            <form className="flex flex-col gap-5" onSubmit={submit}>
-                <div className="grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name" className="text-brand-ink text-sm font-medium">
-                            Nama
+        <AuthEntryLayout
+            title="Buat Akun Baru"
+            description="Daftar untuk membeli dan mengelola template akuntansi Anda."
+            size="register"
+        >
+            <Head title="Daftar Akun - AccountingChoice" />
+
+            <form className="flex flex-col gap-4 text-left" onSubmit={submit}>
+                <div className="grid gap-3.5">
+                    {/* Name */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="name" className="text-xs font-semibold text-[#1d1d1f]">
+                            Nama Lengkap
                         </Label>
-                        <Input
+                        <input
                             id="name"
                             type="text"
                             required
@@ -52,17 +57,18 @@ export default function Register() {
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             disabled={processing}
-                            placeholder="Nama lengkap kamu"
-                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
+                            placeholder="Contoh: Budi Santoso"
+                            className="h-11 w-full rounded-2xl border border-black/[0.08] bg-[#fbfbfd] px-4 text-xs font-medium text-[#1d1d1f] placeholder:text-neutral-400 focus:border-black/[0.2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition"
                         />
-                        <InputError message={errors.name} className="mt-2" />
+                        <InputError message={errors.name} />
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="email" className="text-brand-ink text-sm font-medium">
-                            Email
+                    {/* Email */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="email" className="text-xs font-semibold text-[#1d1d1f]">
+                            Alamat Email
                         </Label>
-                        <Input
+                        <input
                             id="email"
                             type="email"
                             required
@@ -71,17 +77,18 @@ export default function Register() {
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
                             disabled={processing}
-                            placeholder="email@example.com"
-                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
+                            placeholder="nama@email.com"
+                            className="h-11 w-full rounded-2xl border border-black/[0.08] bg-[#fbfbfd] px-4 text-xs font-medium text-[#1d1d1f] placeholder:text-neutral-400 focus:border-black/[0.2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition"
                         />
                         <InputError message={errors.email} />
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="phone" className="text-brand-ink text-sm font-medium">
-                            No. Telepon
+                    {/* Phone */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="phone" className="text-xs font-semibold text-[#1d1d1f]">
+                            Nomor WhatsApp / HP
                         </Label>
-                        <Input
+                        <input
                             id="phone"
                             type="tel"
                             required
@@ -90,18 +97,19 @@ export default function Register() {
                             value={data.phone}
                             onChange={(e) => setData('phone', e.target.value)}
                             disabled={processing}
-                            placeholder="08xxxxxxxxxx"
-                            className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 placeholder:text-black/40"
+                            placeholder="081234567890"
+                            className="h-11 w-full rounded-2xl border border-black/[0.08] bg-[#fbfbfd] px-4 text-xs font-medium text-[#1d1d1f] placeholder:text-neutral-400 focus:border-black/[0.2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition"
                         />
                         <InputError message={errors.phone} />
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="password" className="text-brand-ink text-sm font-medium">
+                    {/* Password */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="password" className="text-xs font-semibold text-[#1d1d1f]">
                             Password
                         </Label>
                         <div className="relative">
-                            <Input
+                            <input
                                 id="password"
                                 type={showPassword ? 'text' : 'password'}
                                 required
@@ -110,28 +118,28 @@ export default function Register() {
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
                                 disabled={processing}
-                                placeholder="Password"
-                                className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 pr-10 placeholder:text-black/40"
+                                placeholder="Minimal 8 karakter"
+                                className="h-11 w-full rounded-2xl border border-black/[0.08] bg-[#fbfbfd] px-4 pr-11 text-xs font-medium text-[#1d1d1f] placeholder:text-neutral-400 focus:border-black/[0.2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition"
                             />
                             <button
                                 type="button"
                                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                                aria-controls="password"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="hover:text-brand-primary focus-visible:outline-brand-primary absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45 transition focus-visible:outline-2"
+                                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-neutral-400 hover:text-neutral-700 transition"
                             >
-                                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                         </div>
                         <InputError message={errors.password} />
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="password_confirmation" className="text-brand-ink text-sm font-medium">
-                            Konfirmasi password
+                    {/* Password Confirmation */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="password_confirmation" className="text-xs font-semibold text-[#1d1d1f]">
+                            Konfirmasi Password
                         </Label>
                         <div className="relative">
-                            <Input
+                            <input
                                 id="password_confirmation"
                                 type={showPasswordConfirmation ? 'text' : 'password'}
                                 required
@@ -140,39 +148,38 @@ export default function Register() {
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
                                 disabled={processing}
-                                placeholder="Konfirmasi password"
-                                className="text-brand-ink border-auth-border focus-visible:border-brand-primary focus-visible:ring-brand-primary/20 h-10 rounded-lg bg-white/70 pr-10 placeholder:text-black/40"
+                                placeholder="Ulangi password"
+                                className="h-11 w-full rounded-2xl border border-black/[0.08] bg-[#fbfbfd] px-4 pr-11 text-xs font-medium text-[#1d1d1f] placeholder:text-neutral-400 focus:border-black/[0.2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition"
                             />
                             <button
                                 type="button"
-                                aria-label={showPasswordConfirmation ? 'Sembunyikan password' : 'Tampilkan password'}
-                                aria-controls="password_confirmation"
+                                aria-label={showPasswordConfirmation ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'}
                                 onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                                className="hover:text-brand-primary focus-visible:outline-brand-primary absolute inset-y-0 right-0 flex w-10 items-center justify-center text-black/45 transition focus-visible:outline-2"
+                                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-neutral-400 hover:text-neutral-700 transition"
                             >
-                                {showPasswordConfirmation ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                         </div>
                         <InputError message={errors.password_confirmation} />
                     </div>
 
-                    <HoverBorderGradient
+                    {/* Submit Button */}
+                    <button
                         type="submit"
-                        containerClassName="h-10 w-full rounded-lg focus-visible:outline-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-60"
-                        className="bg-auth-action hover:bg-brand-primary h-full w-full rounded-lg font-semibold text-white transition-colors"
-                        tabIndex={6}
                         disabled={processing}
+                        className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] text-xs font-semibold text-white shadow-xs transition hover:bg-[#333336] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
                     >
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        {processing ? 'Memproses...' : 'Buat akun'}
-                    </HoverBorderGradient>
+                        {processing && <LoaderCircle className="h-4 w-4 animate-spin text-white" />}
+                        <span>{processing ? 'Mendaftarkan Akun...' : 'Daftar Akun'}</span>
+                    </button>
                 </div>
 
-                <div className="text-center text-sm text-black/55">
+                {/* Footer text */}
+                <div className="mt-4 text-center text-xs text-[#86868b]">
                     Sudah memiliki akun?{' '}
-                    <TextLink href={route('login')} className="text-brand-primary font-semibold" tabIndex={7}>
-                        Masuk
-                    </TextLink>
+                    <Link href={route('login')} className="font-semibold text-emerald-700 hover:text-emerald-900 transition">
+                        Masuk di sini
+                    </Link>
                 </div>
             </form>
         </AuthEntryLayout>

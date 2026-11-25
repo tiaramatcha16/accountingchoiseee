@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, LoaderCircle, MessageCircleQuestion, Send, Sparkles } from 'lucide-react';
+import { BookOpen, HelpCircle, LoaderCircle, MessageCircleQuestion, Send } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -113,10 +113,10 @@ export default function ProductGuideAssistant({ orderId, itemId, productTitle, g
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-auto min-h-9 gap-1.5 rounded-xl border-emerald-200 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
+                    className="h-auto min-h-9 gap-1.5 rounded-full border-black/[0.08] px-3.5 py-1.5 text-xs font-semibold text-[#1d1d1f] hover:bg-neutral-50"
                 >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Panduan AI
+                    <BookOpen className="h-3.5 w-3.5 text-[#86868b]" />
+                    Panduan Template
                 </Button>
             </DialogTrigger>
             <DialogContent className="flex max-h-[88vh] max-w-2xl flex-col gap-0 overflow-hidden rounded-3xl bg-white p-0 shadow-xl">
@@ -136,8 +136,8 @@ export default function ProductGuideAssistant({ orderId, itemId, productTitle, g
                     <>
                         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
                             <div className="flex items-start gap-2.5">
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
-                                    <Sparkles className="h-3.5 w-3.5" />
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[#1d1d1f]">
+                                    <HelpCircle className="h-3.5 w-3.5" />
                                 </span>
                                 <div className="max-w-[88%] rounded-2xl rounded-tl-sm bg-gray-100 px-4 py-3 text-xs leading-5 text-gray-800">
                                     Tanya cara mulai, cara mengisi, atau arti bagian template. Jawaban AI hanya bersumber dari panduan yang disiapkan
@@ -151,8 +151,8 @@ export default function ProductGuideAssistant({ orderId, itemId, productTitle, g
                                     className={`flex items-start gap-2.5 ${message.role === 'user' ? 'justify-end' : ''}`}
                                 >
                                     {message.role === 'assistant' && (
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
-                                            <Sparkles className="h-3.5 w-3.5" />
+                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[#1d1d1f]">
+                                            <HelpCircle className="h-3.5 w-3.5" />
                                         </span>
                                     )}
                                     <div

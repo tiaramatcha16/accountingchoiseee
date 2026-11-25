@@ -15,7 +15,6 @@ import {
     Phone,
     Search,
     Sheet,
-    Sparkles,
     Star,
     Store,
     Wallet,
@@ -41,7 +40,6 @@ export type IconName =
     | 'phone'
     | 'search'
     | 'sheet'
-    | 'sparkles'
     | 'star'
     | 'store'
     | 'wallet'
@@ -65,7 +63,6 @@ const icons: Record<IconName, LucideIcon> = {
     phone: Phone,
     search: Search,
     sheet: Sheet,
-    sparkles: Sparkles,
     star: Star,
     store: Store,
     wallet: Wallet,

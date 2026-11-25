@@ -1,17 +1,11 @@
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
-import { BarChart3, BookOpen, FileSpreadsheet, Folder, LayoutGrid, MessageCircle, ShoppingBag, Store, Users } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, LayoutGrid, MessageCircle, ShoppingBag, Store, Users } from 'lucide-react';
 import { useEffect } from 'react';
 import AppLogo from './app-logo';
-
-const footerNavItems: NavItem[] = [
-    { title: 'Repository', href: 'https://github.com/laravel/react-starter-kit', icon: Folder },
-    { title: 'Documentation', href: 'https://laravel.com/docs/starter-kits', icon: BookOpen },
-];
 
 export function AppSidebar() {
     const { auth, adminChatNeedsReplyCount = 0 } = usePage<SharedData>().props;
@@ -41,7 +35,6 @@ export function AppSidebar() {
                   icon: MessageCircle,
               },
               { title: 'Pengguna', href: '/admin/users', icon: Users },
-              { title: 'Lihat katalog', href: '/templates', icon: Store },
           ]
         : [
               { title: 'Dashboard', href: '/dashboard', icon: LayoutGrid },
@@ -51,11 +44,11 @@ export function AppSidebar() {
           ];
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
+        <Sidebar collapsible="icon" variant="inset" className="border-r border-black/[0.06] bg-white">
+            <SidebarHeader className="border-b border-black/[0.06] bg-white p-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton size="lg" asChild className="hover:bg-neutral-100 transition-colors rounded-2xl">
                             <Link href={home} prefetch>
                                 <AppLogo />
                             </Link>
@@ -63,11 +56,10 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent>
+            <SidebarContent className="p-2 bg-white">
                 <NavMain items={mainNavItems} />
             </SidebarContent>
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+            <SidebarFooter className="border-t border-black/[0.06] bg-white p-3">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

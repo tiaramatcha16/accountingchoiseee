@@ -1,5 +1,6 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
+    AlertCircle,
     Archive,
     Check,
     CheckCircle2,
@@ -12,7 +13,6 @@ import {
     LoaderCircle,
     Plus,
     Search,
-    Sparkles,
     Trash2,
     X,
 } from 'lucide-react';
@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { getCsrfHeaders } from '@/lib/csrf';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
 
 interface Product {
     id: number;
@@ -73,6 +73,7 @@ const formatRupiah = (amount: number) =>
 const quickCategories = ['UMKM & Bisnis', 'Keuangan Personal', 'Perpajakan', 'Freelancer'];
 
 export default function AdminProducts({ products, stats, categories, filters, status }: Props) {
+    const { errors: pageErrors } = usePage<SharedData>().props;
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/admin' },
         { title: 'Kelola Template', href: '/admin/products' },
@@ -80,6 +81,8 @@ export default function AdminProducts({ products, stats, categories, filters, st
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [searchQuery, setSearchQuery] = useState(filters.q ?? '');
     const [filterCategory, setFilterCategory] = useState(filters.category ?? '');
     const [filterStatus, setFilterStatus] = useState(filters.status ?? '');
@@ -89,6 +92,7 @@ export default function AdminProducts({ products, stats, categories, filters, st
     const [createGuideNotes, setCreateGuideNotes] = useState('');
     const [editGuideNotes, setEditGuideNotes] = useState('');
     const [guideRequiredNotice, setGuideRequiredNotice] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const generationInProgress = useRef(false);
     // Create form
     const {
@@ -315,12 +319,34 @@ export default function AdminProducts({ products, stats, categories, filters, st
     };
 
     const handleDelete = (product: Product) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus template "${product.title}"?`)) {
-            router.delete(route('admin.products.destroy', product.id), {
-                preserveScroll: true,
-            });
-        }
+        setErrorMessage(null);
+        setDeletingProduct(product);
     };
+
+    const confirmDelete = () => {
+        if (!deletingProduct) return;
+        setIsDeleting(true);
+        setErrorMessage(null);
+        router.delete(route('admin.products.destroy', deletingProduct.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeletingProduct(null);
+            },
+            onError: (errors) => {
+                if (errors.product) {
+                    setErrorMessage(errors.product);
+                } else {
+                    const firstError = Object.values(errors)[0];
+                    if (firstError) setErrorMessage(firstError);
+                }
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    const activeErrorMessage = errorMessage || (pageErrors?.product as string | undefined);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -328,27 +354,28 @@ export default function AdminProducts({ products, stats, categories, filters, st
 
             <main className="mx-auto w-full max-w-7xl space-y-8 p-6 lg:p-10">
                 {/* Header & Main Action */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-black/[0.06] pb-6">
                     <div>
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold tracking-widest text-emerald-700 uppercase">
-                            Manajemen Toko
+                        <span className="inline-flex items-center rounded-full border border-emerald-200/60 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-wider text-emerald-700 uppercase">
+                            Manajemen Spreadsheet
                         </span>
-                        <h1 className="font-heading mt-2.5 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Kelola Template Excel</h1>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Kelola template, link master Google Sheets, dan panduan AI yang tampil untuk pembeli setelah pembayaran berhasil.
+                        <h1 className="mt-2 text-2xl sm:text-3xl font-semibold tracking-[-0.035em] text-[#1d1d1f]">Kelola Template Excel</h1>
+                        <p className="mt-1 text-sm text-[#86868b]">
+                            Kelola template, tautan master Google Sheets, dan panduan AI yang otomatis tampil untuk pembeli setelah pembayaran berhasil.
                         </p>
                     </div>
 
-                    <Button
+                    <button
+                        type="button"
                         onClick={() => setIsCreateOpen(true)}
-                        className="bg-brand-primary hover:bg-brand-primary-dark shadow-brand-primary/20 flex h-11 items-center gap-2 rounded-xl px-5 font-bold text-white shadow-sm"
+                        className="inline-flex items-center gap-2 rounded-full bg-[#1d1d1f] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#333336] active:scale-95"
                     >
                         <Plus className="h-4 w-4" />
                         Tambah Template
-                    </Button>
+                    </button>
                 </div>
 
-                {/* Status Message */}
+                {/* Status & Error Messages */}
                 {status && (
                     <div
                         role="status"
@@ -359,38 +386,66 @@ export default function AdminProducts({ products, stats, categories, filters, st
                     </div>
                 )}
 
+                {activeErrorMessage && (
+                    <div
+                        role="alert"
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-red-500/30 bg-red-50 p-4 text-sm font-semibold text-red-800 shadow-xs"
+                    >
+                        <div className="flex items-center gap-3">
+                            <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+                            <span>{activeErrorMessage}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setErrorMessage(null)}
+                            className="rounded-lg p-1 text-red-500 hover:bg-red-100"
+                            title="Tutup pesan"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                )}
+
                 {/* Stat Cards */}
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-                        <div className="flex items-center justify-between text-gray-500">
-                            <span className="text-xs font-semibold">Total Template</span>
-                            <Layers className="h-4 w-4 text-emerald-600" />
+                    <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                        <div className="flex items-center justify-between text-[#86868b]">
+                            <span className="text-xs font-medium">Total Template</span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-neutral-100 text-[#1d1d1f]">
+                                <Layers className="h-3.5 w-3.5" />
+                            </span>
                         </div>
-                        <p className="font-heading mt-3 text-2xl font-extrabold text-gray-900">{stats.total}</p>
+                        <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#1d1d1f]">{stats.total}</p>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-                        <div className="flex items-center justify-between text-gray-500">
-                            <span className="text-xs font-semibold">Aktif Tayang</span>
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                        <div className="flex items-center justify-between text-[#86868b]">
+                            <span className="text-xs font-medium">Aktif Tayang</span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                            </span>
                         </div>
-                        <p className="font-heading mt-3 text-2xl font-extrabold text-emerald-700">{stats.published}</p>
+                        <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-emerald-700">{stats.published}</p>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-                        <div className="flex items-center justify-between text-gray-500">
-                            <span className="text-xs font-semibold">Draft Belum Tayang</span>
-                            <Clock className="h-4 w-4 text-amber-500" />
+                    <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                        <div className="flex items-center justify-between text-[#86868b]">
+                            <span className="text-xs font-medium">Draft Belum Tayang</span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                                <Clock className="h-3.5 w-3.5" />
+                            </span>
                         </div>
-                        <p className="font-heading mt-3 text-2xl font-extrabold text-amber-600">{stats.draft}</p>
+                        <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-amber-600">{stats.draft}</p>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-                        <div className="flex items-center justify-between text-gray-500">
-                            <span className="text-xs font-semibold">Total Unduhan</span>
-                            <Download className="text-brand-gold-dark h-4 w-4" />
+                    <div className="rounded-3xl border border-black/[0.06] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                        <div className="flex items-center justify-between text-[#86868b]">
+                            <span className="text-xs font-medium">Total Unduhan</span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-neutral-100 text-[#1d1d1f]">
+                                <Download className="h-3.5 w-3.5" />
+                            </span>
                         </div>
-                        <p className="font-heading text-brand-gold-dark mt-3 text-2xl font-extrabold">{stats.downloads}</p>
+                        <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#1d1d1f]">{stats.downloads}</p>
                     </div>
                 </div>
 
@@ -550,10 +605,8 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                     onClick={() => void generateUsageGuide('create')}
                                     className="w-fit rounded-xl text-xs"
                                 >
-                                    {generatingTarget === 'create-guide' ? (
+                                    {generatingTarget === 'create-guide' && (
                                         <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                                     )}
                                     {generatingTarget === 'create-guide' ? 'Menyusun draft panduan...' : 'Buat draft panduan dengan AI'}
                                 </Button>
@@ -594,10 +647,8 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                     onClick={() => void generateDetails('create')}
                                     className="w-fit rounded-xl text-xs"
                                 >
-                                    {generatingTarget === 'create' ? (
+                                    {generatingTarget === 'create' && (
                                         <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                                     )}
                                     {generatingTarget === 'create' ? 'Menganalisis spreadsheet...' : 'Buat judul & deskripsi dengan AI'}
                                 </Button>
@@ -652,22 +703,22 @@ export default function AdminProducts({ products, stats, categories, filters, st
                 )}
 
                 {/* Filter & Search Bar */}
-                <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-3xl border border-black/[0.06] bg-white p-3 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] sm:flex-row sm:items-center sm:justify-between">
                     <form onSubmit={handleFilterSubmit} className="flex flex-1 flex-wrap items-center gap-3">
                         <div className="relative min-w-[200px] flex-1">
-                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            <Input
+                            <Search className="absolute top-1/2 left-3.5 h-3.5 w-3.5 -translate-y-1/2 text-[#86868b]" />
+                            <input
                                 placeholder="Cari judul template atau kategori..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="focus-visible:border-brand-primary h-9 rounded-xl border-gray-200 pl-9 text-xs"
+                                className="w-full rounded-2xl border border-black/[0.08] bg-[#fbfbfd] py-2 pr-3 pl-9 text-xs text-[#1d1d1f] outline-none transition focus:border-neutral-300 focus:bg-white placeholder:text-[#86868b]"
                             />
                         </div>
 
                         <select
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
-                            className="h-9 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700"
+                            className="rounded-2xl border border-black/[0.08] bg-[#fbfbfd] py-2 px-3 text-xs font-medium text-[#1d1d1f] outline-none"
                         >
                             <option value="">Semua Kategori</option>
                             {categories.map((category) => (
@@ -680,7 +731,7 @@ export default function AdminProducts({ products, stats, categories, filters, st
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="h-9 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700"
+                            className="rounded-2xl border border-black/[0.08] bg-[#fbfbfd] py-2 px-3 text-xs font-medium text-[#1d1d1f] outline-none"
                         >
                             <option value="">Semua Status</option>
                             <option value="published">Tayang (Published)</option>
@@ -688,56 +739,63 @@ export default function AdminProducts({ products, stats, categories, filters, st
                             <option value="archived">Diarsipkan</option>
                         </select>
 
-                        <Button type="submit" variant="secondary" className="h-9 rounded-xl px-4 text-xs font-bold">
-                            <Filter className="mr-1.5 h-3.5 w-3.5" />
-                            Filter
-                        </Button>
+                        <button
+                            type="submit"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#1d1d1f] px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-[#333336] active:scale-95"
+                        >
+                            <Filter className="h-3.5 w-3.5" />
+                            <span>Filter</span>
+                        </button>
                     </form>
 
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-[#86868b]">
                         Menampilkan {products.data.length} dari {products.total} template
                     </div>
                 </div>
 
                 {/* Products Table Card */}
-                <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xs">
+                <div className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                     {products.data.length === 0 ? (
                         <div className="p-12 text-center">
-                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 text-[#86868b]">
                                 <FileSpreadsheet className="h-7 w-7" />
                             </div>
-                            <h3 className="font-heading text-base font-bold text-gray-900">Belum ada template</h3>
-                            <p className="mt-1 text-xs text-gray-500">Tambahkan link master Google Sheets pertama Anda.</p>
-                            <Button onClick={() => setIsCreateOpen(true)} className="bg-brand-primary mt-5 rounded-xl text-xs font-bold text-white">
-                                <Plus className="mr-1.5 h-4 w-4" />
+                            <h3 className="text-base font-semibold text-[#1d1d1f]">Belum ada template</h3>
+                            <p className="mt-1 text-xs text-[#86868b]">Tambahkan link master Google Sheets pertama Anda.</p>
+                            <button
+                                type="button"
+                                onClick={() => setIsCreateOpen(true)}
+                                className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#1d1d1f] px-5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-[#333336]"
+                            >
+                                <Plus className="h-4 w-4" />
                                 Tambah Sekarang
-                            </Button>
+                            </button>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[850px] text-left text-xs">
-                                <thead className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-extrabold tracking-wider text-gray-500 uppercase">
+                                <thead className="border-b border-black/[0.06] bg-[#f5f5f7]/60 text-[10px] font-semibold tracking-wider text-[#86868b] uppercase">
                                     <tr>
-                                        <th className="px-6 py-4">Informasi Template</th>
-                                        <th className="px-4 py-4">Harga</th>
-                                        <th className="px-4 py-4">Status</th>
-                                        <th className="px-4 py-4">Panduan AI</th>
-                                        <th className="px-4 py-4 text-center">Unduhan</th>
-                                        <th className="px-6 py-4 text-right">Aksi</th>
+                                        <th className="px-6 py-3.5">Informasi Template</th>
+                                        <th className="px-4 py-3.5">Harga</th>
+                                        <th className="px-4 py-3.5">Status</th>
+                                        <th className="px-4 py-3.5">Panduan AI</th>
+                                        <th className="px-4 py-3.5 text-center">Unduhan</th>
+                                        <th className="px-6 py-3.5 text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-black/[0.04]">
                                     {products.data.map((product) => (
-                                        <tr key={product.id} className="transition hover:bg-gray-50/50">
+                                        <tr key={product.id} className="transition hover:bg-neutral-50/50">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-start gap-3">
-                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100/60 text-emerald-800">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
                                                         <FileSpreadsheet className="h-5 w-5" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-heading line-clamp-1 text-xs font-bold text-gray-900">{product.title}</h4>
-                                                        <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-500">
-                                                            <span className="rounded-md bg-gray-100 px-2 py-0.5 font-semibold text-gray-700">
+                                                        <h4 className="line-clamp-1 text-xs font-semibold text-[#1d1d1f]">{product.title}</h4>
+                                                        <div className="mt-1 flex items-center gap-2 text-[11px] text-[#86868b]">
+                                                            <span className="rounded-md bg-neutral-100 px-2 py-0.5 font-medium text-[#1d1d1f]">
                                                                 {product.category}
                                                             </span>
                                                             <span>·</span>
@@ -751,7 +809,7 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                                                     Master Google Sheets
                                                                 </a>
                                                             ) : (
-                                                                <span className="font-mono text-gray-400">
+                                                                <span className="font-mono text-[#86868b]">
                                                                     {product.original_filename ?? 'File Excel dari penjual'}
                                                                 </span>
                                                             )}
@@ -760,7 +818,7 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                                 </div>
                                             </td>
 
-                                            <td className="font-heading text-brand-primary px-4 py-4 text-sm font-extrabold">
+                                            <td className="px-4 py-4 text-xs font-semibold text-[#1d1d1f]">
                                                 {formatRupiah(product.price)}
                                             </td>
 
@@ -851,17 +909,17 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                 <Link
                                     key={idx}
                                     href={link.url}
-                                    className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                                         link.active
-                                            ? 'bg-brand-primary text-white shadow-xs'
-                                            : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-[#1d1d1f] text-white shadow-xs'
+                                            : 'border border-black/[0.08] bg-white text-[#1d1d1f] hover:bg-neutral-50'
                                     }`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ) : (
                                 <span
                                     key={idx}
-                                    className="rounded-xl px-3.5 py-2 text-xs font-semibold text-gray-400 opacity-60"
+                                    className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-[#86868b] opacity-60"
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ),
@@ -1009,10 +1067,8 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                     onClick={() => void generateUsageGuide('edit')}
                                     className="w-fit rounded-xl text-xs"
                                 >
-                                    {generatingTarget === 'edit-guide' ? (
+                                    {generatingTarget === 'edit-guide' && (
                                         <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                                     )}
                                     {generatingTarget === 'edit-guide' ? 'Menyusun draft panduan...' : 'Buat draft panduan dengan AI'}
                                 </Button>
@@ -1047,10 +1103,8 @@ export default function AdminProducts({ products, stats, categories, filters, st
                                     onClick={() => void generateDetails('edit')}
                                     className="w-fit rounded-xl text-xs"
                                 >
-                                    {generatingTarget === 'edit' ? (
+                                    {generatingTarget === 'edit' && (
                                         <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                                     )}
                                     {generatingTarget === 'edit' ? 'Menganalisis spreadsheet...' : 'Buat ulang judul & deskripsi dengan AI'}
                                 </Button>
@@ -1085,6 +1139,66 @@ export default function AdminProducts({ products, stats, categories, filters, st
                             </DialogFooter>
                         </form>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal Konfirmasi Hapus Template */}
+            <Dialog open={!!deletingProduct} onOpenChange={(open) => {
+                if (!open && !isDeleting) {
+                    setDeletingProduct(null);
+                }
+            }}>
+                <DialogContent className="max-w-md rounded-3xl p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-semibold text-[#1d1d1f]">
+                            Hapus Template
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-[#86868b] mt-1">
+                            Apakah Anda yakin ingin menghapus template{' '}
+                            <span className="font-semibold text-[#1d1d1f]">"{deletingProduct?.title}"</span>? Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {activeErrorMessage && (
+                        <div role="alert" className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+                            <span>{activeErrorMessage}</span>
+                        </div>
+                    )}
+
+                    <DialogFooter className="gap-2 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isDeleting}
+                            onClick={() => {
+                                setDeletingProduct(null);
+                                setErrorMessage(null);
+                            }}
+                            className="rounded-full text-xs"
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={isDeleting}
+                            onClick={confirmDelete}
+                            className="rounded-full px-5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                    Menghapus...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                    Hapus Template
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </AppLayout>

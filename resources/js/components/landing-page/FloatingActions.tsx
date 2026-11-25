@@ -1,9 +1,11 @@
 import { usePage } from '@inertiajs/react';
-import { LoaderCircle, MessageCircle, Send, Sparkles, X } from 'lucide-react';
+import { Bot, CheckCheck, CircleHelp, LoaderCircle, MessageCircle, Send, ShieldCheck, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import { getCsrfHeaders } from '@/lib/csrf';
 import { type SharedData } from '@/types';
+import { Bubble, BubbleContent } from '@/components/ui/c-message-3-utils/bubble';
+import { Message, MessageContent, MessageFooter, MessageHeader } from '@/components/ui/c-message-3-utils/message';
 
 interface ChatMessage {
     id: number;
@@ -179,19 +181,19 @@ export default function FloatingActions() {
                     role="dialog"
                     aria-modal="false"
                     aria-labelledby="buyer-chat-widget-title"
-                    className="fixed right-4 bottom-20 z-50 flex h-[min(600px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] max-w-[390px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl sm:right-6 sm:bottom-24"
+                    className="fixed right-4 bottom-20 z-50 flex h-[min(600px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] max-w-[390px] flex-col overflow-hidden rounded-3xl border border-black/[0.08] bg-[#fbfbfd] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15)] sm:right-6 sm:bottom-24"
                 >
-                    <header className="flex items-center justify-between bg-emerald-800 px-4 py-3.5 text-white">
+                    <header className="flex items-center justify-between bg-[#1d1d1f] px-4 py-3.5 text-white">
                         <div className="flex items-center gap-3">
-                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
                                 <MessageCircle className="h-5 w-5" />
                             </span>
                             <div>
-                                <h2 id="buyer-chat-widget-title" className="text-sm font-bold">
+                                <h2 id="buyer-chat-widget-title" className="text-sm font-semibold tracking-[-0.01em]">
                                     Chat dengan Admin
                                 </h2>
-                                <p className="text-[11px] text-emerald-100">
-                                    {status === 'needs_admin' ? 'Pertanyaan diteruskan ke admin' : 'AI dan admin siap membantu'}
+                                <p className="text-[11px] text-white/60">
+                                    {status === 'needs_admin' ? 'Pertanyaan diteruskan ke admin' : 'Admin & CS siap membantu'}
                                 </p>
                             </div>
                         </div>
@@ -199,72 +201,94 @@ export default function FloatingActions() {
                             type="button"
                             onClick={() => setIsOpen(false)}
                             aria-label="Tutup chat"
-                            className="rounded-full p-2 text-white/90 transition hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
+                            className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
                         >
                             <X className="h-5 w-5" />
                         </button>
                     </header>
 
-                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 p-4">
+                    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto bg-slate-50/70 p-4">
                         {isLoading && messages.length === 0 && (
-                            <div className="m-auto flex items-center gap-2 text-sm text-slate-500">
+                            <div className="m-auto flex items-center gap-2 text-sm text-[#86868b]">
                                 <LoaderCircle className="h-4 w-4 animate-spin" />
                                 Memuat percakapan...
                             </div>
                         )}
                         {!isLoading && messages.length === 0 && (
                             <div className="m-auto max-w-[270px] py-8 text-center">
-                                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800">
+                                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-200/60 text-[#86868b]">
                                     <MessageCircle className="h-6 w-6" />
                                 </span>
-                                <h3 className="mt-4 text-sm font-bold text-slate-900">Ada yang ingin ditanyakan?</h3>
-                                <p className="mt-1 text-xs leading-5 text-slate-500">
-                                    AI menjawab sesuai panduan admin. Jika belum ada jawabannya, pesan akan diteruskan ke admin.
+                                <h3 className="mt-4 text-sm font-semibold text-[#1d1d1f]">Ada yang ingin ditanyakan?</h3>
+                                <p className="mt-1 text-xs leading-5 text-[#86868b]">
+                                    Pertanyaan Anda akan dijawab langsung berdasarkan panduan toko atau diteruskan ke admin.
                                 </p>
                             </div>
                         )}
                         {messages.map((message) => {
                             const isBuyer = message.sender_type === 'buyer';
                             const isSystem = message.sender_type === 'system';
+                            const isAi = message.sender_type === 'ai';
+                            const timeString = new Date(message.created_at).toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            });
+
                             return (
-                                <div key={message.id} className={`flex ${isBuyer ? 'justify-end' : 'justify-start'}`}>
-                                    <article
-                                        className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 ${
-                                            isBuyer
-                                                ? 'rounded-br-md bg-emerald-700 text-white'
-                                                : isSystem
-                                                  ? 'border border-amber-200 bg-amber-50 text-amber-900'
-                                                  : 'rounded-bl-md bg-white text-slate-800 shadow-sm'
-                                        }`}
-                                    >
+                                <Message key={message.id} align={isBuyer ? 'end' : 'start'}>
+                                    <MessageContent className="max-w-[85%]">
                                         {!isBuyer && (
-                                            <p className="mb-1 flex items-center gap-1 text-[10px] font-bold">
-                                                {message.sender_type === 'ai' ? (
-                                                    <>
-                                                        <Sparkles className="h-3 w-3" /> Asisten AI · panduan admin
-                                                    </>
+                                            <MessageHeader className="gap-1.5 text-[11px] text-slate-500">
+                                                {isAi ? (
+                                                    <span className="flex items-center gap-1 font-semibold text-emerald-800">
+                                                        <Bot className="h-3 w-3 text-emerald-600" />
+                                                        Asisten Otomatis
+                                                    </span>
                                                 ) : isSystem ? (
-                                                    'Pemberitahuan'
+                                                    <span className="font-semibold text-amber-700">Pemberitahuan</span>
                                                 ) : (
-                                                    'Admin'
+                                                    <span className="flex items-center gap-1 font-semibold text-slate-900">
+                                                        <ShieldCheck className="h-3 w-3 text-blue-600" />
+                                                        Admin
+                                                    </span>
                                                 )}
-                                            </p>
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="bg-slate-300 size-1 shrink-0 rounded-full"
+                                                />
+                                                <span className="tabular-nums font-mono text-[10px] text-slate-400">{timeString}</span>
+                                            </MessageHeader>
                                         )}
-                                        <p className="text-xs leading-5 break-words whitespace-pre-wrap">{message.body}</p>
-                                        <time
-                                            dateTime={message.created_at}
-                                            className={`mt-1 block text-right text-[9px] ${isBuyer ? 'text-emerald-100' : 'text-slate-400'}`}
+
+                                        <Bubble
+                                            variant={isBuyer ? 'default' : isSystem ? 'system' : 'muted'}
+                                            className={
+                                                isBuyer
+                                                    ? 'bg-[#1d1d1f] text-white shadow-xs'
+                                                    : isSystem
+                                                    ? 'bg-amber-50/90 border border-amber-200/80 text-amber-900'
+                                                    : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.03)]'
+                                            }
                                         >
-                                            {new Date(message.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
-                                        </time>
-                                    </article>
-                                </div>
+                                            <BubbleContent className="text-[12.5px] leading-relaxed">
+                                                {message.body}
+                                            </BubbleContent>
+                                        </Bubble>
+
+                                        {isBuyer && (
+                                            <MessageFooter className="gap-1.5 text-[10px] text-slate-400 justify-end">
+                                                <span className="tabular-nums font-mono">{timeString}</span>
+                                                <CheckCheck className="h-3 w-3 text-emerald-600 inline" />
+                                            </MessageFooter>
+                                        )}
+                                    </MessageContent>
+                                </Message>
                             );
                         })}
                         <div ref={messagesEnd} />
                     </div>
 
-                    <form onSubmit={sendMessage} className="border-t border-slate-100 bg-white p-3">
+                    <form onSubmit={sendMessage} className="border-t border-black/[0.06] bg-white p-3">
                         <label htmlFor="chat-widget-message" className="sr-only">
                             Tulis pertanyaan
                         </label>
@@ -277,13 +301,13 @@ export default function FloatingActions() {
                                 value={body}
                                 onChange={(event) => setBody(event.target.value)}
                                 placeholder="Tulis pesan..."
-                                className="min-h-11 flex-1 resize-none rounded-2xl border border-slate-200 px-3 py-2.5 text-xs focus:border-emerald-600 focus:ring-emerald-600"
+                                className="min-h-11 flex-1 resize-none rounded-2xl border border-black/[0.08] bg-[#fbfbfd] px-3 py-2.5 text-xs text-[#1d1d1f] outline-none transition focus:border-neutral-300 focus:bg-white focus:ring-1 focus:ring-neutral-300 placeholder:text-[#86868b]"
                             />
                             <button
                                 type="submit"
                                 disabled={isSending || !body.trim()}
                                 aria-label="Kirim pesan"
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white transition hover:bg-[#333336] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 {isSending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                             </button>
@@ -300,7 +324,7 @@ export default function FloatingActions() {
             {!isOpen && (hasNewReply || notificationError) && (
                 <div
                     role="status"
-                    className="fixed right-4 bottom-[5.5rem] z-50 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-lg sm:right-6"
+                    className="fixed right-4 bottom-[5.5rem] z-50 rounded-2xl border border-black/[0.06] bg-[#1d1d1f] px-4 py-2.5 text-xs font-semibold text-white shadow-lg sm:right-6"
                 >
                     {hasNewReply ? 'Ada balasan baru di chat' : 'Notifikasi belum diperbarui. Klik untuk cek chat.'}
                 </div>
@@ -312,12 +336,12 @@ export default function FloatingActions() {
                     isOpen ? 'Tutup chat admin' : unreadCount > 0 ? `Buka chat admin, ${unreadCount} balasan belum dibaca` : 'Buka chat admin'
                 }
                 aria-expanded={isOpen}
-                className="fixed right-4 bottom-4 z-50 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-emerald-700 px-4 text-sm font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:scale-[1.03] hover:bg-emerald-800 focus-visible:ring-4 focus-visible:ring-emerald-300 sm:right-6 sm:bottom-6"
+                className="fixed right-4 bottom-4 z-50 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-4 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] transition hover:scale-[1.03] hover:bg-[#333336] focus-visible:ring-4 focus-visible:ring-neutral-400 active:scale-[0.98] sm:right-6 sm:bottom-6"
             >
                 {isOpen ? <X aria-hidden="true" className="h-5 w-5" /> : <MessageCircle aria-hidden="true" className="h-6 w-6" />}
                 <span className="hidden sm:inline">{isOpen ? 'Tutup' : 'Chat Admin'}</span>
                 {!isOpen && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-extrabold text-white">
+                    <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
