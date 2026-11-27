@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { Bot, CheckCheck, CircleHelp, LoaderCircle, MessageCircle, Send, ShieldCheck, X } from 'lucide-react';
+import { Bot, CheckCheck, CircleHelp, Info, LoaderCircle, MessageCircle, Send, ShieldCheck, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import { getCsrfHeaders } from '@/lib/csrf';
@@ -245,7 +245,10 @@ export default function FloatingActions() {
                                                         Asisten Otomatis
                                                     </span>
                                                 ) : isSystem ? (
-                                                    <span className="font-semibold text-amber-700">Pemberitahuan</span>
+                                                    <span className="flex items-center gap-1 font-semibold text-slate-600">
+                                                        <Info className="h-3 w-3 text-slate-400" />
+                                                        Pemberitahuan
+                                                    </span>
                                                 ) : (
                                                     <span className="flex items-center gap-1 font-semibold text-slate-900">
                                                         <ShieldCheck className="h-3 w-3 text-blue-600" />
@@ -264,10 +267,10 @@ export default function FloatingActions() {
                                             variant={isBuyer ? 'default' : isSystem ? 'system' : 'muted'}
                                             className={
                                                 isBuyer
-                                                    ? 'bg-[#1d1d1f] text-white shadow-xs'
+                                                    ? 'bg-[#1d1d1f] text-white shadow-xs rounded-2xl rounded-br-xs'
                                                     : isSystem
-                                                    ? 'bg-amber-50/90 border border-amber-200/80 text-amber-900'
-                                                    : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.03)]'
+                                                    ? 'bg-slate-50 border border-slate-200/90 text-slate-700 shadow-2xs rounded-2xl rounded-bl-xs'
+                                                    : 'bg-white border border-slate-200/90 text-[#1d1d1f] shadow-xs rounded-2xl rounded-bl-xs'
                                             }
                                         >
                                             <BubbleContent className="text-[12.5px] leading-relaxed">

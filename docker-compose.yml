@@ -1,0 +1,56 @@
+services:
+  # Laravel Backend (PHP 8.4-FPM)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tiara_app
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env
+    networks:
+      - tiara-network
+      - shared-global-network
+
+  # Web Server (Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: tiara_nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8085}:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - tiara-network
+
+  # Vite Frontend Dev Server (Hot Module Replacement)
+  vite:
+    image: node:22-alpine
+    container_name: tiara_vite
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "${VITE_PORT:-5175}:5175"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5175"
+    depends_on:
+      - app
+    networks:
+      - tiara-network
+
+networks:
+  tiara-network:
+    driver: bridge
+  shared-global-network:
+    external: true
+    name: shared-docker_global-network

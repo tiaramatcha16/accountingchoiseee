@@ -69,6 +69,18 @@ export default function LandingPage({ products }: LandingPageProps) {
         return () => clearTimeout(fallbackTimer);
     }, [finishLoading]);
 
+    useEffect(() => {
+        if (!isLoading && typeof window !== 'undefined' && window.location.hash) {
+            const hash = window.location.hash.replace('#', '');
+            const elem = document.getElementById(hash);
+            if (elem) {
+                setTimeout(() => {
+                    elem.scrollIntoView({ behavior: 'smooth' });
+                }, 150);
+            }
+        }
+    }, [isLoading]);
+
     return (
         <StorefrontLayout>
             <div className="relative min-h-screen bg-[#fbfbfd] text-[#1d1d1f]">
@@ -133,7 +145,7 @@ export default function LandingPage({ products }: LandingPageProps) {
 
                         <BentoFeatures />
 
-                        <div id="template-list">
+                        <div>
                             <Catalog initialProducts={products} />
                         </div>
 

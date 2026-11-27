@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { MessageCircle, Send, Trash2 } from 'lucide-react';
+import { Bot, Info, MessageCircle, Send, Trash2 } from 'lucide-react';
 import { FormEvent, useEffect } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -220,7 +220,7 @@ export default function AdminChats({ conversations, selectedConversation, faqs, 
                                     <div className="flex items-center justify-between gap-2">
                                         <span className="truncate text-xs font-semibold text-[#1d1d1f]">{conversation.buyer.name}</span>
                                         {conversation.status === 'needs_admin' && (
-                                            <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" aria-label="Perlu balasan" />
+                                            <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" aria-label="Perlu balasan" />
                                         )}
                                     </div>
                                     <p className="truncate font-mono text-[11px] text-[#86868b]">{conversation.buyer.email}</p>
@@ -259,8 +259,8 @@ export default function AdminChats({ conversations, selectedConversation, faqs, 
                                         <h3 className="text-sm font-semibold text-[#1d1d1f]">{selectedConversation.buyer.name}</h3>
                                         <p className="font-mono text-xs text-[#86868b]">{selectedConversation.buyer.email}</p>
                                         {selectedConversation.status === 'needs_admin' && (
-                                            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200/60">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 border border-blue-200/60">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
                                                 Menunggu balasan admin
                                             </span>
                                         )}
@@ -273,19 +273,25 @@ export default function AdminChats({ conversations, selectedConversation, faqs, 
                                                     <article
                                                         className={`max-w-[88%] rounded-2xl px-4 py-2.5 ${
                                                             isAdmin
-                                                                ? 'rounded-br-md bg-[#1d1d1f] text-white'
+                                                                ? 'rounded-br-xs bg-[#1d1d1f] text-white shadow-xs'
                                                                 : message.sender_type === 'system'
-                                                                  ? 'border border-amber-200 bg-amber-50 text-amber-900'
-                                                                  : 'rounded-bl-md border border-black/[0.06] bg-white text-[#1d1d1f] shadow-xs'
+                                                                  ? 'rounded-bl-xs border border-slate-200/90 bg-[#f4f5f7] text-slate-700 shadow-2xs'
+                                                                  : 'rounded-bl-xs border border-black/[0.06] bg-white text-[#1d1d1f] shadow-xs'
                                                         }`}
                                                     >
                                                         {!isAdmin && (
-                                                            <p className="mb-1 text-[10px] font-semibold text-[#86868b]">
-                                                                {message.sender_type === 'buyer'
-                                                                    ? 'Pembeli'
-                                                                    : message.sender_type === 'ai'
-                                                                      ? 'Asisten AI'
-                                                                      : 'Pemberitahuan'}
+                                                            <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold text-[#86868b]">
+                                                                {message.sender_type === 'buyer' ? (
+                                                                    'Pembeli'
+                                                                ) : message.sender_type === 'ai' ? (
+                                                                    <>
+                                                                        <Bot className="h-3 w-3 text-emerald-600 inline" /> Asisten AI
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Info className="h-3 w-3 text-slate-500 inline" /> Pemberitahuan
+                                                                    </>
+                                                                )}
                                                             </p>
                                                         )}
                                                         <p className="text-xs leading-5 break-words whitespace-pre-wrap">{message.body}</p>

@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -18,12 +18,6 @@ export default function CartDrawer() {
         }).format(val);
 
     const handleCheckout = () => {
-        if (!user) {
-            setIsCartOpen(false);
-            router.visit(route('login'));
-            return;
-        }
-
         if (items.length === 0) return;
 
         setIsCartOpen(false);
@@ -60,16 +54,21 @@ export default function CartDrawer() {
                                 Jelajahi katalog template keuangan kami dan klik tombol &quot;+ Keranjang&quot; untuk menambahkan spreadsheet yang kamu
                                 butuhkan.
                             </p>
-                            <button
-                                type="button"
-                                className="mt-6 rounded-full border border-black/[0.08] bg-white px-5 py-2 text-xs font-semibold text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition hover:bg-neutral-50 active:scale-[0.98]"
-                                onClick={() => {
+                            <Link
+                                href="/#template-list"
+                                className="mt-6 inline-flex items-center justify-center rounded-full border border-black/[0.08] bg-white px-5 py-2 text-xs font-semibold text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition hover:bg-neutral-50 active:scale-[0.98]"
+                                onClick={(e) => {
                                     setIsCartOpen(false);
-                                    router.visit(route('catalog.index'));
+                                    const targetElement = document.getElementById('template-list');
+                                    if (targetElement) {
+                                        e.preventDefault();
+                                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                                        window.history.pushState(null, '', '#template-list');
+                                    }
                                 }}
                             >
                                 Lihat Katalog Template
-                            </button>
+                            </Link>
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -146,7 +145,7 @@ export default function CartDrawer() {
                         <button
                             type="button"
                             onClick={handleCheckout}
-                            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] text-sm font-semibold text-white shadow-sm transition hover:bg-[#333336] hover:shadow-md active:scale-[0.98]"
+                            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] text-sm font-semibold text-white shadow-sm transition hover:bg-[#333336] hover:shadow-md active:scale-[0.98] cursor-pointer"
                         >
                             {user ? (
                                 <>
@@ -155,11 +154,27 @@ export default function CartDrawer() {
                                 </>
                             ) : (
                                 <>
-                                    Masuk untuk Membuat Pesanan
+                                    Masuk untuk Checkout
                                     <ArrowRight className="h-4 w-4" />
                                 </>
                             )}
                         </button>
+
+                        <Link
+                            href="/#template-list"
+                            className="mt-2 block text-center text-xs font-medium text-[#86868b] transition hover:text-[#1d1d1f]"
+                            onClick={(e) => {
+                                setIsCartOpen(false);
+                                const targetElement = document.getElementById('template-list');
+                                if (targetElement) {
+                                    e.preventDefault();
+                                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                                    window.history.pushState(null, '', '#template-list');
+                                }
+                            }}
+                        >
+                            + Tambah template lain dari katalog
+                        </Link>
                     </div>
                 )}
             </SheetContent>

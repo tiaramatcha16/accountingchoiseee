@@ -295,10 +295,6 @@ export default function Hero() {
                                     >
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black/[0.06] pb-3">
                                             <div>
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
-                                                    <Sparkles className="h-3 w-3 text-emerald-600" />
-                                                    Double-entry Otomatis
-                                                </span>
                                                 <h3 className="mt-1 text-sm sm:text-base font-semibold text-[#1d1d1f]">Buku Jurnal Umum (General Journal)</h3>
                                                 <p className="text-xs text-[#86868b]">Setiap transaksi langsung otomatis terposting ke buku besar & neraca saldo.</p>
                                             </div>
@@ -363,11 +359,7 @@ export default function Hero() {
                                         className="space-y-4"
                                     >
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black/[0.06] pb-3">
-                                            <div>
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
-                                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                                    Standar SAK EMKM
-                                                </span>
+                                            <div> 
                                                 <h3 className="mt-1 text-sm sm:text-base font-semibold text-[#1d1d1f]">Laporan Laba & Rugi Komprehensif</h3>
                                                 <p className="text-xs text-[#86868b]">Periode berjalan 1 – 30 November 2026 (Dihitung Real-time dari Jurnal)</p>
                                             </div>

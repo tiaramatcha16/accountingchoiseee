@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Bot, CheckCheck, CircleHelp, MessageCircle, Send, ShieldCheck, Sparkles } from 'lucide-react';
+import { Bot, CheckCheck, CircleHelp, Info, MessageCircle, Send, ShieldCheck, Sparkles } from 'lucide-react';
 import { FormEvent, useEffect, useRef } from 'react';
 
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -71,7 +71,7 @@ export default function BuyerChat({ conversation }: { conversation: Conversation
                             <p className="mt-0.5 text-xs text-[#86868b]">Riwayat chat tersimpan di akun ini.</p>
                         </div>
                         {conversation.status === 'needs_admin' ? (
-                            <span className="rounded-full border border-amber-200/60 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Menunggu admin</span>
+                            <span className="rounded-full border border-blue-200/60 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Menunggu admin</span>
                         ) : conversation.status === 'waiting_customer' ? (
                             <span className="rounded-full border border-emerald-200/60 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Admin membalas</span>
                         ) : (
@@ -109,7 +109,10 @@ export default function BuyerChat({ conversation }: { conversation: Conversation
                                                         Asisten Otomatis
                                                     </span>
                                                 ) : isSystem ? (
-                                                    <span className="font-semibold text-amber-700">Pemberitahuan Sistem</span>
+                                                    <span className="flex items-center gap-1 font-semibold text-slate-600">
+                                                        <Info className="h-3.5 w-3.5 text-slate-400" />
+                                                        Pemberitahuan Sistem
+                                                    </span>
                                                 ) : (
                                                     <span className="flex items-center gap-1 font-semibold text-slate-900">
                                                         <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
@@ -128,10 +131,10 @@ export default function BuyerChat({ conversation }: { conversation: Conversation
                                             variant={isBuyer ? 'default' : isSystem ? 'system' : 'muted'}
                                             className={
                                                 isBuyer
-                                                    ? 'bg-[#1d1d1f] text-white shadow-sm'
+                                                    ? 'bg-[#1d1d1f] text-white shadow-xs rounded-2xl rounded-br-xs'
                                                     : isSystem
-                                                    ? 'bg-amber-50/90 border border-amber-200/80 text-amber-900'
-                                                    : 'bg-white border border-slate-200/80 text-slate-900 shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
+                                                    ? 'bg-slate-50 border border-slate-200/90 text-slate-700 shadow-2xs rounded-2xl rounded-bl-xs'
+                                                    : 'bg-white border border-slate-200/90 text-[#1d1d1f] shadow-xs rounded-2xl rounded-bl-xs'
                                             }
                                         >
                                             <BubbleContent className="text-[13.5px] leading-relaxed">

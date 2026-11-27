@@ -23,7 +23,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     const submit: FormEventHandler = (event) => {
         event.preventDefault();
-        post(route('login.store'), {
+        post('/login', {
+            preserveScroll: true,
             onFinish: () => reset('password'),
         });
     };
@@ -120,7 +121,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     <button
                         type="submit"
                         disabled={processing}
-                        className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] text-xs font-semibold text-white shadow-xs transition hover:bg-[#333336] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+                        className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] text-xs font-semibold text-white shadow-xs transition hover:bg-[#333336] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin text-white" />}
                         <span>{processing ? 'Memverifikasi...' : 'Masuk'}</span>

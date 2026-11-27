@@ -154,7 +154,16 @@ function ProductDetailContent({ product }: { product: Product }) {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        addToCart({ id: product.id, title: product.title }, qty);
+                                        addToCart(
+                                            {
+                                                id: product.id,
+                                                title: product.title,
+                                                category: product.category,
+                                                price: product.price,
+                                                slug: product.slug,
+                                            },
+                                            qty
+                                        );
                                     }}
                                     className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#333336] hover:shadow-md active:scale-[0.98]"
                                 >

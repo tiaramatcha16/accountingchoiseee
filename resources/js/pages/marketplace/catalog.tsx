@@ -210,28 +210,28 @@ function CatalogContent({ products, categories, filters }: CatalogProps) {
                                                 <button
                                                     type="button"
                                                     onClick={() => setIsCartOpen(true)}
-                                                    className="border-brand-primary/20 bg-brand-primary/5 text-brand-primary hover:bg-brand-primary/10 inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition"
+                                                    className="border-brand-primary/20 bg-brand-primary/5 text-brand-primary hover:bg-brand-primary/10 inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition cursor-pointer"
                                                 >
                                                     <ShoppingBag className="h-4 w-4" />
                                                     Di Keranjang
                                                 </button>
-                                            ) : user ? (
+                                            ) : (
                                                 <button
                                                     type="button"
-                                                    onClick={() => addToCart({ id: product.id, title: product.title })}
-                                                    className="bg-brand-primary hover:bg-brand-primary-dark inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold text-white transition"
+                                                    onClick={() =>
+                                                        addToCart({
+                                                            id: product.id,
+                                                            title: product.title,
+                                                            category: product.category,
+                                                            price: product.price,
+                                                            slug: product.slug,
+                                                        })
+                                                    }
+                                                    className="bg-brand-primary hover:bg-brand-primary-dark inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold text-white transition cursor-pointer"
                                                 >
                                                     <ShoppingBag className="h-4 w-4" />
                                                     Tambah
                                                 </button>
-                                            ) : (
-                                                <Link
-                                                    href={route('login')}
-                                                    className="bg-brand-primary hover:bg-brand-primary-dark inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold text-white transition"
-                                                >
-                                                    <ShoppingBag className="h-4 w-4" />
-                                                    Masuk untuk beli
-                                                </Link>
                                             )}
                                         </div>
                                     </article>

@@ -30,7 +30,12 @@ export default function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
-    const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    const handleLogout = () => {
+        setIsMobileMenuOpen(false);
+        router.post(route('logout'));
+    };
+
+    const handleNavClick = (e: React.MouseEvent<any>, href: string) => {
         if (href.startsWith('/#') || href.startsWith('#')) {
             const targetId = href.replace(/^\/?#/, '');
             const targetElement = document.getElementById(targetId);
@@ -129,22 +134,20 @@ export default function Navbar() {
 
                 {/* Right Actions: Cart & Auth */}
                 <div className="flex shrink-0 items-center gap-2">
-                    {user && user.role !== 'admin' && (
-                        <button
-                            type="button"
-                            aria-label={`Buka keranjang, ${cartCount} unit`}
-                            onClick={() => setIsCartOpen(true)}
-                            className="relative inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 transition hover:bg-slate-50 hover:border-slate-300 shadow-2xs"
-                        >
-                            <ShoppingBag className="h-4 w-4 text-emerald-700" />
-                            <span className="hidden sm:inline">Keranjang</span>
-                            {cartCount > 0 && (
-                                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-black text-white">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        aria-label={`Buka keranjang, ${cartCount} unit`}
+                        onClick={() => setIsCartOpen(true)}
+                        className="relative inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 transition hover:bg-slate-50 hover:border-slate-300 shadow-2xs cursor-pointer"
+                    >
+                        <ShoppingBag className="h-4 w-4 text-emerald-700" />
+                        <span className="hidden sm:inline">Keranjang</span>
+                        {cartCount > 0 && (
+                            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-black text-white">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
 
                     {user ? (
                         <DropdownMenu>
@@ -189,11 +192,13 @@ export default function Navbar() {
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-rose-600 focus:text-rose-600">
-                                    <Link href="/logout" method="post" as="button" className="flex w-full items-center gap-2">
-                                        <LogOut className="h-4 w-4" />
-                                        <span>Keluar</span>
-                                    </Link>
+                                <DropdownMenuItem
+                                    onSelect={handleLogout}
+                                    onClick={handleLogout}
+                                    className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-rose-600 focus:text-rose-600 focus:bg-rose-50 flex items-center gap-2 w-full"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    <span>Keluar</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -201,13 +206,13 @@ export default function Navbar() {
                         <div className="flex items-center gap-1 sm:gap-2">
                             <Link
                                 href="/login"
-                                className="rounded-full px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition hover:bg-neutral-100"
+                                className="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-medium text-[#1d1d1f] transition hover:bg-neutral-100"
                             >
                                 Masuk
                             </Link>
                             <Link
                                 href="/register"
-                                className="inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-4 py-2 text-xs font-medium text-white shadow-xs transition hover:bg-[#333336] active:scale-95"
+                                className="cursor-pointer inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-4 py-2 text-xs font-medium text-white shadow-xs transition hover:bg-[#333336] active:scale-95"
                             >
                                 Daftar
                             </Link>
@@ -242,12 +247,62 @@ export default function Navbar() {
                             </Link>
                         ))}
 
-                        {!user && (
+                        {user ? (
+                            <div className="pt-3 border-t border-slate-100 space-y-2">
+                                <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-100">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1d1d1f] text-xs font-bold text-white uppercase">
+                                        {user.name.charAt(0)}
+                                    </span>
+                                    <div className="min-w-0 flex-1 text-left">
+                                        <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                                        <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <Link
+                                        href="/my-orders"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                                    >
+                                        <Package className="h-4 w-4 text-emerald-700" />
+                                        <span>Pesanan Saya</span>
+                                    </Link>
+                                    {user.role !== 'admin' && (
+                                        <Link
+                                            href="/chat"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                                        >
+                                            <MessageCircle className="h-4 w-4 text-emerald-700" />
+                                            <span>Chat Admin</span>
+                                        </Link>
+                                    )}
+                                    {user.role === 'admin' && (
+                                        <Link
+                                            href="/admin"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                                        >
+                                            <Shield className="h-4 w-4 text-emerald-700" />
+                                            <span>Dashboard Admin</span>
+                                        </Link>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 text-left cursor-pointer"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        <span>Keluar</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
                             <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                                 <Link
                                     href="/login"
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex-1 text-center rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-800"
+                                    className="cursor-pointer flex-1 text-center rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-800"
                                 >
                                     Masuk
                                 </Link>
